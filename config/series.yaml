@@ -1,0 +1,1393 @@
+# series.yaml
+#
+# Asserted reference data: every series this system carries, its canonical unit, its
+# cadence and its release rule. This file is the one source for macro_core.series, which
+# is never written by a fetch. docs/CONTRACT.md's "Sources and their cadence" table is a
+# summary of this file and must stay in step with it.
+#
+# 76 series in four table groups: 20 Price & Levels, 13 Sentiment & Positioning,
+# 13 Flows & Structure, 30 Macro & Fiscal State.
+#
+# -----------------------------------------------------------------------------
+# Fields
+# -----------------------------------------------------------------------------
+#
+# key          The stable snake_case identifier every condition expression resolves
+#              against. Never reused and never renamed: a condition names a key, so a
+#              rename silently breaks a tracker rather than failing loudly.
+# label        The display string as the journal writes it. Free to change.
+# table_group  Price & Levels | Sentiment & Positioning | Flows & Structure |
+#              Macro & Fiscal State. The journal's four snapshot headings, verbatim.
+# ordinal      Position inside the table group, in journal order. Asserted, not derived.
+# value_kind   numeric | text. A text series stores value null and its content in
+#              display, and may only appear in a manual condition.
+# unit         The one canonical unit for this series. Every condition referencing it is
+#              written in this unit. Null for a text series.
+# decimals     Display precision. Not storage precision: every value is numeric.
+# cadence      session | daily | weekly | monthly | event.
+# release_rule Declarative, grammar below. What next_expected is computed from.
+# replayable   True if the source serves history, so a missed run is recoverable.
+#              False if it only serves the present moment, in which case a missed
+#              reading is a permanent macro_quality.gap and is never interpolated.
+# source_name  The producer, named the way the journal's Source column names it.
+# fetch_path   deterministic | agent_0930. deterministic runs on both the 09:30 and the
+#              21:00 runs. agent_0930 runs only at 09:30, and the 21:00 run carries the
+#              previous observation forward as an observation with its own older asof.
+# tier_floor   The best tier this source can ever attain. A top-ten-exchange proxy or an
+#              aggregator quote can never be Tier 1.
+#
+# Only those twelve keys are loaded. Everything else in this file is a comment.
+#
+# -----------------------------------------------------------------------------
+# The release_rule grammar
+# -----------------------------------------------------------------------------
+#
+#   release_rule := <base> [ "; " <key> "=" <value> ]*
+#
+# Six bases, each naming the calendar the series advances on:
+#
+#   us_session       One observation per US equity trading session (NYSE calendar).
+#   us_business_day  One per US federal business day (SIFMA / Treasury calendar).
+#   calendar_day     One per calendar day, UTC. A 24-hour market has no closed days.
+#   weekly           One per week.
+#   monthly          One per calendar month.
+#   event            No schedule. next_expected is null and the row is never overdue.
+#
+# Two keys:
+#
+#   asof=    Which day the observation describes.
+#            weekly: mon | tue | wed | thu | fri.
+#            monthly: eom, the last day of the data month.
+#            Omitted for the three daily bases, where asof is the day itself.
+#   release= When that observation becomes readable. Omitted means same_day.
+#            <weekday>          a weekday name, in the same week as asof
+#            +Nb                N US business days after asof
+#            +Nd                N calendar days after asof
+#            next_month_day:N   day N of the month after the asof month
+#
+# next_expected is computed by advancing the base's calendar one step past the latest
+# observation's asof, then applying release. A weekly series four days from its next
+# print is therefore `due`, not `overdue`, which is the whole reason the rule is
+# declared here rather than guessed from the gap between the last two rows.
+#
+# The nine shapes in use:
+#
+#   us_session                                    every US session, same day
+#   us_session; release=+1d                       ETF flows, tallied the day after the session
+#   us_business_day                               every Treasury business day, same day
+#   us_business_day; release=+1b                  ICE OAS, published one business day late
+#   calendar_day                                  every calendar day
+#   weekly; asof=tue; release=fri                 CFTC: Tuesday positions, Friday release
+#   weekly; asof=wed; release=thu                 H.4.1: Wednesday balance, Thursday 16:30 ET
+#   monthly; asof=eom; release=next_month_day:15  State Street: data month, mid next month
+#   event                                         event driven, no scheduled next
+#
+# -----------------------------------------------------------------------------
+# Three corrections this file makes against the pipeline it replaces
+# -----------------------------------------------------------------------------
+#
+# 1. Cash indices are their own series, beside the futures, not an `extra` field on
+#    them. Every phase condition, scenario band and setup level written to date refers
+#    to the cash index, and a condition cannot reference a value buried in another
+#    series' extra. R1 exists because the two were once conflated in the week-over-week
+#    arithmetic.
+#
+# 2. hy_oas_bps and ig_oas_bps are stored in BASIS POINTS, not percent. FRED serves
+#    percent and the journal prints both ("2.70% (270 bps)"), but every condition is
+#    written in basis points ("HY under 292 bps"). A condition comparing 2.70 against
+#    300 is silently false and looks correct.
+#
+# 3. CME FedWatch has its own key. 2026-W39.points.json holds two rows both labelled
+#    "Next FOMC" because the search agent returned the FedWatch reading under the wrong
+#    metric label and the merge mapped both onto the same row. next_fomc is the meeting
+#    date; fedwatch_next_fomc is the market-implied path into it. They have different
+#    cadences, so they could never have shared a row.
+
+series:
+
+  # ===========================================================================
+  # Price & Levels
+  # ===========================================================================
+  #
+  # The index rows are front-month futures (~24h quotes, so they capture weekend moves
+  # the Friday cash close misses) paired with their cash index. Nasdaq is cash only:
+  # there is no clean future. Both halves of each pair carry the same cadence, because
+  # a phase condition may name either.
+
+  - key: spx_front
+    label: S&P 500 (ES=F)
+    table_group: Price & Levels
+    ordinal: 1
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (ES=F)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # Every S&P level in the Setup Ledger (7,500-7,560 entry, 7,450 invalidation,
+  # 7,800 target) is a cash level. extra carries dma200_pct and dma200_slope.
+  - key: spx_cash
+    label: S&P 500 (cash)
+    table_group: Price & Levels
+    ordinal: 2
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (^GSPC)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: dow_front
+    label: Dow Jones (YM=F)
+    table_group: Price & Levels
+    ordinal: 3
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (YM=F)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: dow_cash
+    label: Dow Jones (cash)
+    table_group: Price & Levels
+    ordinal: 4
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (^DJI)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: nasdaq_cash
+    label: Nasdaq Composite (cash)
+    table_group: Price & Levels
+    ordinal: 5
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (^IXIC)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: rut_front
+    label: Russell 2000 (RTY=F)
+    table_group: Price & Levels
+    ordinal: 6
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (RTY=F)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: rut_cash
+    label: Russell 2000 (cash)
+    table_group: Price & Levels
+    ordinal: 7
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (^RUT)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # Crypto is daily on a calendar_day release rule, not a cadence of its own.
+  # A 24-hour market sampled once per run has one observation per calendar day and no
+  # closed days, which is exactly what calendar_day means; the market never closing is a
+  # property of the release rule, not of the cadence.
+  - key: btc
+    label: BTC
+    table_group: Price & Levels
+    ordinal: 8
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: CoinGecko market_chart
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: eth
+    label: ETH
+    table_group: Price & Levels
+    ordinal: 9
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: CoinGecko market_chart
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: sol
+    label: SOL
+    table_group: Price & Levels
+    ordinal: 10
+    value_kind: numeric
+    unit: usd
+    decimals: 2
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: CoinGecko market_chart
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # The crypto framework's anchor for Phase 1 and for both the 5-to-1 and the
+  # 1-to-2 transition recipes, and the one crypto tracker condition that could
+  # not be typed at all: "BTC holds above the 50W MA" was a manual row.
+  #
+  # The mean of the last 50 WEEKLY closes, not a 350-day mean of daily closes.
+  # A week's close is its final daily point, ISO weeks ending Sunday, which is
+  # the boundary every crypto weekly candle already uses. CoinGecko's keyless
+  # market_chart serves 366 daily points at days=365, which is 52 weeks, so
+  # there is margin for two and no more. Fewer than 50 complete weeks yields
+  # null with a note: a 43-week average wearing the name of a 50-week one is
+  # worse than an absent figure.
+  - key: btc_50w_ma
+    label: BTC 50-week moving average
+    table_group: Price & Levels
+    ordinal: 20
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: weekly
+    release_rule: 'weekly; asof=sun'
+    replayable: true
+    source_name: Computed from CoinGecko market_chart daily history
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: gold
+    label: Gold
+    table_group: Price & Levels
+    ordinal: 11
+    value_kind: numeric
+    unit: usd_per_oz
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (GC=F)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: silver
+    label: Silver
+    table_group: Price & Levels
+    ordinal: 12
+    value_kind: numeric
+    unit: usd_per_oz
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (SI=F)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: wti
+    label: WTI crude
+    table_group: Price & Levels
+    ordinal: 13
+    value_kind: numeric
+    unit: usd_per_bbl
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (CL=F)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # docs/CONTRACT.md's worked expression example is {"op":"between","series":"brent",
+  # "lo":92,"hi":112}, so this key is fixed as `brent`, not `brent_crude`.
+  - key: brent
+    label: Brent crude
+    table_group: Price & Levels
+    ordinal: 14
+    value_kind: numeric
+    unit: usd_per_bbl
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (BZ=F)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: dxy
+    label: Dollar index (DXY)
+    table_group: Price & Levels
+    ordinal: 15
+    value_kind: numeric
+    unit: index_points
+    decimals: 3
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (DX-Y.NYB)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: vix
+    label: VIX
+    table_group: Price & Levels
+    ordinal: 16
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (^VIX)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # The par curve is a Treasury publication on federal business days, not an equity
+  # session series: it prints on a day the NYSE is shut for a market holiday only, and
+  # not on a federal holiday the NYSE observes. extra on ust_10y carries
+  # spread_2s10s_bps.
+  - key: ust_30y
+    label: 30Y yield
+    table_group: Price & Levels
+    ordinal: 17
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: daily
+    release_rule: us_business_day
+    replayable: true
+    source_name: US Treasury daily par curve
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: ust_10y
+    label: 10Y yield
+    table_group: Price & Levels
+    ordinal: 18
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: daily
+    release_rule: us_business_day
+    replayable: true
+    source_name: US Treasury daily par curve
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: ust_2y
+    label: 2Y yield
+    table_group: Price & Levels
+    ordinal: 19
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: daily
+    release_rule: us_business_day
+    replayable: true
+    source_name: US Treasury daily par curve
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # ===========================================================================
+  # Sentiment & Positioning
+  # ===========================================================================
+
+  # Read from CNN's own chart endpoint, not from aggregators. It was a 09:30 search agent
+  # on the belief that CNN's API was blocked; it answers 418 only to a request without a
+  # full browser user agent and a cnn.com Referer, and 200 with both (worker/src/macro/
+  # fetchers/cnn.py). The endpoint serves one point per US session from any start date,
+  # so the series is replayable and a missed run is recovered by the next one.
+  # us_session and cadence daily, like breadth: the index is computed on the NYSE close
+  # and dated by the session it describes, and Labor Day has no point. Tier 1 because it
+  # is the producer's own figure.
+  - key: cnn_fear_greed
+    label: Fear & Greed, equities
+    table_group: Sentiment & Positioning
+    ordinal: 1
+    value_kind: numeric
+    unit: index_0_100
+    decimals: 0
+    cadence: daily
+    release_rule: us_session
+    replayable: true
+    source_name: CNN Fear & Greed (dataviz graphdata API)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: crypto_fear_greed
+    label: Fear & Greed, crypto
+    table_group: Sentiment & Positioning
+    ordinal: 2
+    value_kind: numeric
+    unit: index_0_100
+    decimals: 0
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: Alternative.me API
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # The journal prints allocation and risk appetite in one cell. They are two series:
+  # one is a percentage of assets, the other a standardised index, so no single unit
+  # could be declared for the pair.
+  - key: state_street_equity_allocation
+    label: State Street equity allocation
+    table_group: Sentiment & Positioning
+    ordinal: 3
+    value_kind: numeric
+    unit: percent
+    decimals: 1
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=next_month_day:15'
+    replayable: false
+    source_name: State Street Institutional Investor Indicators (asserted)
+    fetch_path: agent_0930
+    tier_floor: 2
+
+  - key: state_street_risk_appetite
+    label: State Street risk appetite
+    table_group: Sentiment & Positioning
+    ordinal: 4
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=next_month_day:15'
+    replayable: false
+    source_name: State Street Institutional Investor Indicators (asserted)
+    fetch_path: agent_0930
+    tier_floor: 2
+
+  # Positions are dated Tuesday and released Friday afternoon. extra carries the regime
+  # band from the CFTC reference note (sidelined / neutral / heavy / extreme) and
+  # open_interest_all.
+  - key: cftc_asset_managers_es
+    label: CFTC asset managers, ES net
+    table_group: Sentiment & Positioning
+    ordinal: 5
+    value_kind: numeric
+    unit: pct_of_oi
+    decimals: 2
+    cadence: weekly
+    release_rule: 'weekly; asof=tue; release=fri'
+    replayable: true
+    source_name: CFTC TFF API (gpe5-46if)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: cftc_leveraged_funds_es
+    label: CFTC leveraged funds, ES net
+    table_group: Sentiment & Positioning
+    ordinal: 6
+    value_kind: numeric
+    unit: pct_of_oi
+    decimals: 2
+    cadence: weekly
+    release_rule: 'weekly; asof=tue; release=fri'
+    replayable: true
+    source_name: CFTC TFF API (gpe5-46if)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # The key docs/CONTRACT.md's worked expression example uses. Every setup gate written
+  # to date is a threshold on this series, which is why docs/DECISIONS.md moved it off
+  # an LLM path onto a deterministic source: the 21:00 run evaluates gates and an LLM
+  # fetch cannot sit there.
+  #
+  # Computed here from the constituents: TradingView's scanner serves every S&P 500
+  # line's close and 200-day average within minutes of the US close, so us_session with
+  # no release lag is the truth and the 09:30 run has the session it owes. Barchart's
+  # S5TH, the old source, is published about 09:15 UTC the next day, which is why the
+  # 09:30 run used to open a gap every morning; it is kept as a cross-check.
+  #
+  # Replayable. The scanner re-serves the two sessions before the newest, so a missed
+  # run fills itself on the next one, and `macro-worker --breadth-backfill` rebuilds any
+  # older session from Yahoo closes with the same arithmetic.
+  - key: breadth_spx_above_200dma
+    label: S&P breadth, % above 200dma
+    table_group: Sentiment & Positioning
+    ordinal: 7
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: daily
+    release_rule: us_session
+    replayable: true
+    source_name: Computed from S&P 500 constituents (TradingView scanner), S5TH cross-check
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # BASIS POINTS. FRED serves percent; normalize multiplies by 100 before storing.
+  # ICE publishes with a one-business-day lag, so Friday's reading carries Thursday's
+  # asof and is fresh, not stale.
+  - key: hy_oas_bps
+    label: HY spread (OAS)
+    table_group: Sentiment & Positioning
+    ordinal: 8
+    value_kind: numeric
+    unit: bps
+    decimals: 0
+    cadence: daily
+    release_rule: 'us_business_day; release=+1b'
+    replayable: true
+    source_name: FRED BAMLH0A0HYM2 (fredgraph.csv)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: ig_oas_bps
+    label: IG spread (OAS)
+    table_group: Sentiment & Positioning
+    ordinal: 9
+    value_kind: numeric
+    unit: bps
+    decimals: 0
+    cadence: daily
+    release_rule: 'us_business_day; release=+1b'
+    replayable: true
+    source_name: FRED BAMLC0A0CM (fredgraph.csv)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # docs/CONTRACT.md's worked expression example uses the key `move`.
+  - key: move
+    label: MOVE index
+    table_group: Sentiment & Positioning
+    ordinal: 10
+    value_kind: numeric
+    unit: index_points
+    decimals: 2
+    cadence: session
+    release_rule: us_session
+    replayable: true
+    source_name: Yahoo chart API (^MOVE)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: btc_dominance
+    label: BTC dominance
+    table_group: Sentiment & Positioning
+    ordinal: 11
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: CoinGecko global API
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # value is the median 8-hour funding rate across all listed perpetuals. extra carries
+  # funding by symbol for BTC, ETH and SOL plus n_perps.
+  - key: funding_skew
+    label: Funding skew
+    table_group: Sentiment & Positioning
+    ordinal: 12
+    value_kind: numeric
+    unit: pct_per_8h
+    decimals: 4
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: Binance Futures API
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # The numeric companion to the text fedwatch_next_fomc row, and not a
+  # replacement for it. The odds for the next meeting are the most-quoted number
+  # in any trigger the operator writes ("Oct 28 stays near a coin flip"), and a
+  # text series can only ever appear in a manual condition.
+  #
+  # NOT fetched by the worker. CME's own FedWatch page is a client-rendered
+  # application with no keyless endpoint behind it, so this stays on the 09:30
+  # search agent and belongs to the authoring run's narrative mode. It is
+  # declared here so the registry is complete and a condition naming it
+  # validates.
+  - key: fedwatch_hike_prob_next
+    label: FedWatch hike odds, next FOMC
+    table_group: Sentiment & Positioning
+    ordinal: 13
+    value_kind: numeric
+    unit: percent
+    decimals: 1
+    cadence: daily
+    release_rule: us_session
+    replayable: false
+    source_name: CME FedWatch via aggregator (search agent)
+    fetch_path: agent_0930
+    tier_floor: 2
+
+  # ===========================================================================
+  # Flows & Structure
+  # ===========================================================================
+
+  # value is net liquidity itself, in USD. extra carries the three components (WALCL,
+  # TGA, RRP) with their own as-ofs, per docs/CONTRACT.md, so they are not separate
+  # series. The cadence is the slowest component's: WALCL is the H.4.1 Wednesday
+  # balance, released Thursday 16:30 ET, and computing a daily net liquidity off a
+  # weekly balance sheet would be a fabricated number.
+  - key: net_liquidity
+    label: Net liquidity (Fed BS − TGA − RRP)
+    table_group: Flows & Structure
+    ordinal: 1
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: weekly
+    release_rule: 'weekly; asof=wed; release=thu'
+    replayable: true
+    source_name: FRED WALCL, WTREGEN, RRPONTSYD
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # The six ETF rows come from one deterministic source, worker/src/macro/fetchers/
+  # etf_flows.py: SoSoValue's daily totals, checked against Farside's per-fund table.
+  # The daily net flow is read; the week-to-date flow and the streak are computed from
+  # it, so all three are one reading per US session and all three are replayable
+  # (SoSoValue serves about 300 sessions of history). Tier 1 where SoSoValue and
+  # Farside agree within 5% or $10M, Tier 2 otherwise. A session a source has not
+  # published complete is missing, never zero. Until 2026-09-24 the weekly flow and
+  # the streak were a search agent's, on the 09:30 run only.
+  - key: btc_etf_net_flow
+    label: BTC ETF daily flow
+    table_group: Flows & Structure
+    ordinal: 2
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: session
+    release_rule: 'us_session; release=+1d'
+    replayable: true
+    source_name: SoSoValue, checked against Farside
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # Week to date: the sum of every session of the asof's ISO week up to and including
+  # the asof, so Friday's row is the whole week, which is what the journal and every
+  # scenario band on it have always meant. No row for a week with a session missing.
+  - key: btc_etf_weekly_flow
+    label: BTC ETF weekly flow
+    table_group: Flows & Structure
+    ordinal: 3
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: session
+    release_rule: 'us_session; release=+1d'
+    replayable: true
+    source_name: Computed from SoSoValue daily flows
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # A SIGNED SESSION COUNT, not prose: +2 is two consecutive inflow sessions, -4 is four
+  # consecutive outflow sessions, 0 is a session whose net flow was exactly zero. A
+  # holiday does not break a run. The streak_intact predicate needs an integer and a
+  # text series may only appear in a manual condition. See config/predicates.md.
+  - key: btc_etf_inflow_streak
+    label: BTC ETF inflow streak
+    table_group: Flows & Structure
+    ordinal: 4
+    value_kind: numeric
+    unit: sessions
+    decimals: 0
+    cadence: session
+    release_rule: 'us_session; release=+1d'
+    replayable: true
+    source_name: Computed from SoSoValue daily flows
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: eth_etf_net_flow
+    label: ETH ETF daily flow
+    table_group: Flows & Structure
+    ordinal: 5
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: session
+    release_rule: 'us_session; release=+1d'
+    replayable: true
+    source_name: SoSoValue, checked against Farside
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: eth_etf_weekly_flow
+    label: ETH ETF weekly flow
+    table_group: Flows & Structure
+    ordinal: 6
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: session
+    release_rule: 'us_session; release=+1d'
+    replayable: true
+    source_name: Computed from SoSoValue daily flows
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: eth_etf_inflow_streak
+    label: ETH ETF inflow streak
+    table_group: Flows & Structure
+    ordinal: 7
+    value_kind: numeric
+    unit: sessions
+    decimals: 0
+    cadence: session
+    release_rule: 'us_session; release=+1d'
+    replayable: true
+    source_name: Computed from SoSoValue daily flows
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # extra carries the USDT and USDC components.
+  - key: stablecoin_mcap
+    label: Stablecoin market cap
+    table_group: Flows & Structure
+    ordinal: 8
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: DefiLlama stablecoins API
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: defi_tvl
+    label: DeFi TVL
+    table_group: Flows & Structure
+    ordinal: 9
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: DefiLlama historicalChainTvl
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # A proxy, never a measurement: the sum of open_interest_btc across the top ten
+  # exchanges by OI, converted at spot. extra carries oi_btc, btc_px and the exchange
+  # list. tier_floor 2 states that this series can never be called Tier 1.
+  - key: crypto_open_interest
+    label: Crypto open interest
+    table_group: Flows & Structure
+    ordinal: 10
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: CoinGecko derivatives top-10 proxy
+    fetch_path: deterministic
+    tier_floor: 2
+
+  # value is the single most negative 8-hour funding rate across all listed perpetuals,
+  # which is the tail the row exists to watch. extra carries both tails as
+  # most_negative and most_positive, each a list of (symbol, rate). This is a numeric
+  # series rather than a text one because docs/CONTRACT.md reserves value_kind text for
+  # exactly the five Macro & Fiscal State rows, and a Tier 4 failure must never be
+  # shaped like a prose reading.
+  - key: funding_extremes
+    label: Funding extremes
+    table_group: Flows & Structure
+    ordinal: 11
+    value_kind: numeric
+    unit: pct_per_8h
+    decimals: 4
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: Binance Futures API
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # A rolling 24-hour window read at the moment of the run, so observed_at is the run
+  # time and a missed day is gone. Snapshots taken at different hours of the same day
+  # differ by 10 percent or more; the reading is the window, not the day.
+  - key: liquidations_24h
+    label: Liquidations, 24h
+    table_group: Flows & Structure
+    ordinal: 12
+    value_kind: numeric
+    unit: usd
+    decimals: 0
+    cadence: daily
+    release_rule: calendar_day
+    replayable: false
+    source_name: Coinglass via aggregator (search agent)
+    fetch_path: agent_0930
+    tier_floor: 1
+
+  - key: alt_season_index
+    label: Alt season index
+    table_group: Flows & Structure
+    ordinal: 13
+    value_kind: numeric
+    unit: index_0_100
+    decimals: 0
+    cadence: daily
+    release_rule: calendar_day
+    replayable: true
+    source_name: CoinMarketCap public API
+    fetch_path: deterministic
+    tier_floor: 2
+
+  # ===========================================================================
+  # Macro & Fiscal State
+  # ===========================================================================
+  #
+  # The five prose rows. All five are value_kind text: value is null, display carries
+  # the sentence, unit and decimals are null, and they may only appear in a manual
+  # condition. Without this a prose row and a Tier 4 failure are the same shape, both a
+  # null value with a string beside it, and a failed fetch would render as a macro state.
+
+  - key: fed_funds
+    label: Fed funds rate
+    table_group: Macro & Fiscal State
+    ordinal: 1
+    value_kind: text
+    unit: null
+    decimals: null
+    cadence: event
+    release_rule: event
+    replayable: false
+    source_name: FOMC coverage (search agent)
+    fetch_path: agent_0930
+    tier_floor: 1
+
+  # The meeting date and its shape (statement time, whether an SEP is published).
+  # Distinct from fedwatch_next_fomc, which is the market-implied path into it.
+  - key: next_fomc
+    label: Next FOMC
+    table_group: Macro & Fiscal State
+    ordinal: 2
+    value_kind: text
+    unit: null
+    decimals: null
+    cadence: event
+    release_rule: event
+    replayable: false
+    source_name: federalreserve.gov FOMC calendar (search agent)
+    fetch_path: agent_0930
+    tier_floor: 2
+
+  # The defect fix. In 2026-W39.points.json this reading is filed under a second row
+  # also labelled "Next FOMC"; it is a different series with a different cadence, and it
+  # moves daily while the meeting date does not.
+  - key: fedwatch_next_fomc
+    label: FedWatch quote, next FOMC
+    table_group: Macro & Fiscal State
+    ordinal: 3
+    value_kind: text
+    unit: null
+    decimals: null
+    cadence: daily
+    release_rule: us_session
+    replayable: false
+    source_name: CME FedWatch via aggregator (search agent)
+    fetch_path: agent_0930
+    tier_floor: 2
+
+  - key: tariff_state
+    label: Tariff regime
+    table_group: Macro & Fiscal State
+    ordinal: 4
+    value_kind: text
+    unit: null
+    decimals: null
+    cadence: event
+    release_rule: event
+    replayable: false
+    source_name: Tariff tracker coverage (asserted, search agent)
+    fetch_path: agent_0930
+    tier_floor: 2
+
+  - key: geopolitical_state
+    label: Geopolitical state
+    table_group: Macro & Fiscal State
+    ordinal: 5
+    value_kind: text
+    unit: null
+    decimals: null
+    cadence: event
+    release_rule: event
+    replayable: false
+    source_name: Wire and analysis coverage (asserted, search agent)
+    fetch_path: agent_0930
+    tier_floor: 2
+
+  # ---------------------------------------------------------------------------
+  # Macro prints
+  # ---------------------------------------------------------------------------
+  #
+  # Almost every trigger clause ever written names one of these, and none of them
+  # was a series, which is the single largest reason trigger clauses typed at 38%
+  # while phase conditions typed at 88%.
+  #
+  # STORE THE FIGURE THE CLAUSE REFERS TO, NOT THE FIGURE FRED SERVES.
+  # A clause says "core PCE at 0.2%" and "core CPI 0.3%". Those are
+  # month-over-month percentages. FRED serves an index level: PCEPILFE reads
+  # 130.658 for July 2026. A condition written against the index level would be
+  # false for ever and would look entirely correct, which is the same failure the
+  # basis-point rule above exists to prevent. The worker computes the change from
+  # the two most recent index levels and stores that.
+  #
+  # Which figure each one is:
+  #   CPI, PCE, retail sales, retail control   month-over-month percent
+  #   payrolls                                 month-over-month level change, thousands
+  #   unemployment                             level, percent
+  #   JOLTS openings                           level, millions, because that is how it is quoted
+  #
+  # The release offsets are `+Nb`, US business days after the end of the data
+  # month, and each is set to the LATEST the print has landed rather than the
+  # typical, so the row reads `fresh` until the figure is reliably out. Erring
+  # late costs a day of `fresh` on a figure already published; erring early puts
+  # a false amber on the board every single month. Measured against the 2026
+  # calendar the Catalyst Monitor carries: CPI +9b, PCE +21b, payrolls +2b to
+  # +5b, JOLTS +20b to +23b, retail +10b. The declared offsets sit one or two
+  # business days past the latest of those, which is a day or two of `fresh` on
+  # a published figure and never a false `overdue`.
+
+  - key: cpi_core_mom
+    label: Core CPI (MoM)
+    table_group: Macro & Fiscal State
+    ordinal: 6
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+10b'
+    replayable: true
+    source_name: FRED CPILFESL (fredgraph.csv), month-over-month
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: cpi_headline_mom
+    label: Headline CPI (MoM)
+    table_group: Macro & Fiscal State
+    ordinal: 7
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+10b'
+    replayable: true
+    source_name: FRED CPIAUCSL (fredgraph.csv), month-over-month
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: pce_core_mom
+    label: Core PCE (MoM)
+    table_group: Macro & Fiscal State
+    ordinal: 8
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+22b'
+    replayable: true
+    source_name: FRED PCEPILFE (fredgraph.csv), month-over-month
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: pce_headline_mom
+    label: Headline PCE (MoM)
+    table_group: Macro & Fiscal State
+    ordinal: 9
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+22b'
+    replayable: true
+    source_name: FRED PCEPI (fredgraph.csv), month-over-month
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # The level CHANGE, in thousands, because a clause says "payrolls under 125K"
+  # and never "total nonfarm employment under 159,075".
+  - key: payrolls_change
+    label: Nonfarm payrolls (MoM)
+    table_group: Macro & Fiscal State
+    ordinal: 10
+    value_kind: numeric
+    unit: thousands
+    decimals: 0
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+6b'
+    replayable: true
+    source_name: FRED PAYEMS (fredgraph.csv), month-over-month change
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: unemployment_rate
+    label: Unemployment rate
+    table_group: Macro & Fiscal State
+    ordinal: 11
+    value_kind: numeric
+    unit: percent
+    decimals: 1
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+6b'
+    replayable: true
+    source_name: FRED UNRATE (fredgraph.csv)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # Millions, because a clause says "JOLTS under 7.0M". FRED serves thousands.
+  - key: jolts_openings
+    label: JOLTS job openings
+    table_group: Macro & Fiscal State
+    ordinal: 12
+    value_kind: numeric
+    unit: millions
+    decimals: 3
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+24b'
+    replayable: true
+    source_name: FRED JTSJOL (fredgraph.csv)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: retail_sales_mom
+    label: Retail sales (MoM)
+    table_group: Macro & Fiscal State
+    ordinal: 13
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+11b'
+    replayable: true
+    source_name: FRED RSAFS (fredgraph.csv), month-over-month
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # The Census control group: total retail and food services less motor vehicles
+  # and parts, gasoline stations, building materials, and food services. FRED
+  # carries every component and no aggregate, so the worker subtracts the four
+  # from the total exactly as it computes net liquidity, and withholds the whole
+  # figure when any one of the five is missing for the month: a total missing a
+  # term is not a smaller total. extra carries the five components.
+  - key: retail_control_mom
+    label: Retail sales control group (MoM)
+    table_group: Macro & Fiscal State
+    ordinal: 14
+    value_kind: numeric
+    unit: percent
+    decimals: 2
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+11b'
+    replayable: true
+    source_name: FRED RSAFS less RSMVPD, RSGASS, RSBMGESD, RSFSDP, month-over-month
+    fetch_path: deterministic
+    tier_floor: 1
+
+  # ISM is NOT free on FRED. NAPM and NAPMNOI are discontinued and both answer
+  # 404, verified against the live endpoint, so these two stay on the 09:30
+  # search agent rather than being given a fetcher that cannot work.
+  - key: ism_manufacturing
+    label: ISM manufacturing PMI
+    table_group: Macro & Fiscal State
+    ordinal: 15
+    value_kind: numeric
+    unit: index_points
+    decimals: 1
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+2b'
+    replayable: false
+    source_name: ISM release coverage (search agent)
+    fetch_path: agent_0930
+    tier_floor: 2
+
+  - key: ism_services
+    label: ISM services PMI
+    table_group: Macro & Fiscal State
+    ordinal: 16
+    value_kind: numeric
+    unit: index_points
+    decimals: 1
+    cadence: monthly
+    release_rule: 'monthly; asof=eom; release=+4b'
+    replayable: false
+    source_name: ISM release coverage (search agent)
+    fetch_path: agent_0930
+    tier_floor: 2
+
+  # ---------------------------------------------------------------------------
+  # Treasury auction results
+  # ---------------------------------------------------------------------------
+  #
+  # Three clauses in a single W40 scenario set turn on how an auction went and
+  # none of them could be typed: "the Oct 6-8 3Y/10Y/30Y cluster clears without a
+  # second record tail", "a second tailing auction in the Oct 6-8 cluster", "the
+  # Oct 6-8 auction cluster clears cleanly".
+  #
+  # THERE IS NO TAIL SERIES AND THERE MUST NOT BE ONE.
+  # A tail is the high yield less the WHEN-ISSUED yield at the bidding deadline.
+  # Treasury does not publish when-issued: it is a dealer quote from a grey
+  # market and it is in no feed here. averageMedianYield is in the feed and is
+  # not a substitute, because the median of accepted competitive bids describes
+  # the auction's own distribution while a tail is the gap between the auction
+  # and a market quoted outside it. Subtracting one from the other gives a
+  # number in basis points that would look exactly like a tail, move roughly
+  # with one, and be a different quantity. If a tail is ever needed it must come
+  # as its own series from a source that publishes when-issued.
+  #
+  # What the feed does serve, officially rather than as a quote, is the high
+  # yield and the bid-to-cover, and a condition over those is checkable against
+  # a published record. A clause whose text says "tail" must be narrowed to what
+  # the expression actually checks before it is typed against these.
+  #
+  # KEYED PER TENOR, ON originalSecurityTerm.
+  # A reopening is still an auction of its original tenor: the 19-Year 11-Month
+  # bond auctioned 2026-09-15 is the 20-Year, and it is W39's "the 20Y tailed
+  # 2 bp at a record 5.42%". A clause names a specific tenor's most recent
+  # auction, so each tenor is its own series and the newest auction wins.
+  #
+  # THE FILTER IS NOT OPTIONAL. The same endpoint serves bills, TIPS and
+  # floating-rate notes. A TIPS reopening on 2026-09-17 carries
+  # originalSecurityTerm 10-Year and highYield 2.6530, which is a REAL yield
+  # against the nominal ten-year's 4.8340 on 2026-09-09. Unfiltered it would be
+  # the ten-year's newest reading: plausible alone, wrong in every condition,
+  # and invisible on a row that says only "10-Year auction, 2.65%".
+  #
+  # RELEASE RULE: event, deliberately.
+  # An auction happens on an announced date and has no cadence, so no rule in
+  # the grammar describes it and forcing one would make every tenor overdue on
+  # the days between its auctions. next_expected is therefore null by rule. The
+  # date is still knowable: TreasuryDirect's companion `upcoming` feed publishes
+  # it, the fetcher carries it in extra.next_expected, and the evaluate step
+  # prefers a stated next date over a derived one. The row says when the next
+  # ten-year auction is because Treasury said so, not because a cadence was
+  # invented for it.
+
+  - key: auction_high_yield_2y
+    label: 2Y auction high yield
+    table_group: Macro & Fiscal State
+    ordinal: 17
+    value_kind: numeric
+    unit: percent
+    decimals: 3
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (2-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_bid_to_cover_2y
+    label: 2Y auction bid-to-cover
+    table_group: Macro & Fiscal State
+    ordinal: 18
+    value_kind: numeric
+    unit: ratio
+    decimals: 2
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (2-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_high_yield_3y
+    label: 3Y auction high yield
+    table_group: Macro & Fiscal State
+    ordinal: 19
+    value_kind: numeric
+    unit: percent
+    decimals: 3
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (3-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_bid_to_cover_3y
+    label: 3Y auction bid-to-cover
+    table_group: Macro & Fiscal State
+    ordinal: 20
+    value_kind: numeric
+    unit: ratio
+    decimals: 2
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (3-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_high_yield_5y
+    label: 5Y auction high yield
+    table_group: Macro & Fiscal State
+    ordinal: 21
+    value_kind: numeric
+    unit: percent
+    decimals: 3
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (5-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_bid_to_cover_5y
+    label: 5Y auction bid-to-cover
+    table_group: Macro & Fiscal State
+    ordinal: 22
+    value_kind: numeric
+    unit: ratio
+    decimals: 2
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (5-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_high_yield_7y
+    label: 7Y auction high yield
+    table_group: Macro & Fiscal State
+    ordinal: 23
+    value_kind: numeric
+    unit: percent
+    decimals: 3
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (7-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_bid_to_cover_7y
+    label: 7Y auction bid-to-cover
+    table_group: Macro & Fiscal State
+    ordinal: 24
+    value_kind: numeric
+    unit: ratio
+    decimals: 2
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (7-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_high_yield_10y
+    label: 10Y auction high yield
+    table_group: Macro & Fiscal State
+    ordinal: 25
+    value_kind: numeric
+    unit: percent
+    decimals: 3
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (10-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_bid_to_cover_10y
+    label: 10Y auction bid-to-cover
+    table_group: Macro & Fiscal State
+    ordinal: 26
+    value_kind: numeric
+    unit: ratio
+    decimals: 2
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (10-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_high_yield_20y
+    label: 20Y auction high yield
+    table_group: Macro & Fiscal State
+    ordinal: 27
+    value_kind: numeric
+    unit: percent
+    decimals: 3
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (20-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_bid_to_cover_20y
+    label: 20Y auction bid-to-cover
+    table_group: Macro & Fiscal State
+    ordinal: 28
+    value_kind: numeric
+    unit: ratio
+    decimals: 2
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (20-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_high_yield_30y
+    label: 30Y auction high yield
+    table_group: Macro & Fiscal State
+    ordinal: 29
+    value_kind: numeric
+    unit: percent
+    decimals: 3
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (30-Year)
+    fetch_path: deterministic
+    tier_floor: 1
+
+  - key: auction_bid_to_cover_30y
+    label: 30Y auction bid-to-cover
+    table_group: Macro & Fiscal State
+    ordinal: 30
+    value_kind: numeric
+    unit: ratio
+    decimals: 2
+    cadence: event
+    release_rule: event
+    replayable: true
+    source_name: TreasuryDirect auction results (30-Year)
+    fetch_path: deterministic
+    tier_floor: 1

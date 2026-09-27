@@ -1,0 +1,61 @@
+# How the desk prices a held or watched name for the holdings watch.
+#
+# Read by `macro-agent desk positions` (agent/src/macro_agent/prices.py). The 24h
+# change on the dashboard is computed from these sources and never taken from a model.
+#
+# A US-listed stock or ETF needs no entry: its symbol is its Yahoo symbol. An entry is
+# needed when the name the book uses is not the name the price source uses:
+#
+#   - a non-US listing, whose Yahoo symbol carries the exchange suffix
+#     (012330 on KRX is 012330.KS, D05 on SGX is D05.SI);
+#   - a crypto token, which is priced on Hyperliquid by its token name and on CoinGecko
+#     by its coin id.
+#
+# A manual position may also be entered on the dashboard in Yahoo's own form
+# (012330.KS), in which case no entry is needed either.
+#
+# A name with no route is not guessed at: the watch reports its change as null and says
+# which entry to add here.
+
+equities:
+  "012330":
+    yahoo: "012330.KS"
+    name: Hyundai Mobis
+    exchange: KRX
+  D05:
+    yahoo: D05.SI
+    name: DBS Group
+    exchange: SGX
+  "000660":
+    yahoo: "000660.KS"
+    name: SK hynix
+    exchange: KRX
+
+crypto:
+  # hyperliquid: the base token of the USDC spot pair, or the perp name.
+  # coingecko: the coin id, the fallback when Hyperliquid has no liquid market for it.
+  # market: optional, spot or perp, to price on that Hyperliquid book only. Without
+  #   it a name takes the liquid spot pair, then the liquid perp: Hyperliquid lists
+  #   unrelated spot tokens under perp names (TRUMP, BERA, MON, PUMP), and a spot
+  #   pair that barely trades moves a whole tick at a time. A perp position is
+  #   always priced on the perp. See agent/src/macro_agent/prices.py.
+  BTC:
+    hyperliquid: BTC
+    coingecko: bitcoin
+  ETH:
+    hyperliquid: ETH
+    coingecko: ethereum
+  SOL:
+    hyperliquid: SOL
+    coingecko: solana
+  HYPE:
+    hyperliquid: HYPE
+    coingecko: hyperliquid
+  # Spot tokens held on Hyperliquid, which lists no perp for either. Their
+  # pairs trade dollars a day, so the watch reports their price and no change.
+  MAX:
+    hyperliquid: MAX
+    market: spot
+  NEKO:
+    hyperliquid: NEKO
+    market: spot

@@ -1,0 +1,166 @@
+{
+ "range_1mo": {
+  "chart": {
+   "result": [
+    {
+     "meta": {
+      "currency": "USD",
+      "symbol": "APP",
+      "exchangeName": "NMS",
+      "instrumentType": "EQUITY",
+      "regularMarketTime": 1790189402,
+      "gmtoffset": -14400,
+      "timezone": "EDT",
+      "exchangeTimezoneName": "America/New_York",
+      "regularMarketPrice": 314.59,
+      "chartPreviousClose": 305.77,
+      "currentTradingPeriod": {
+       "pre": {
+        "timezone": "EDT",
+        "end": 1790170200,
+        "start": 1790150400,
+        "gmtoffset": -14400
+       },
+       "regular": {
+        "timezone": "EDT",
+        "end": 1790193600,
+        "start": 1790170200,
+        "gmtoffset": -14400
+       },
+       "post": {
+        "timezone": "EDT",
+        "end": 1790208000,
+        "start": 1790193600,
+        "gmtoffset": -14400
+       }
+      },
+      "dataGranularity": "1d",
+      "range": "1mo"
+     },
+     "timestamp": [
+      1789565400,
+      1789651800,
+      1789738200,
+      1789997400,
+      1790083800,
+      1790170200
+     ],
+     "indicators": {
+      "quote": [
+       {
+        "open": [
+         333.5799865722656,
+         331.8599853515625,
+         323.3900146484375,
+         309.69000244140625,
+         null,
+         315.8999938964844
+        ],
+        "high": [
+         336.44000244140625,
+         333.4309997558594,
+         328.1499938964844,
+         336.94000244140625,
+         null,
+         316.0
+        ],
+        "low": [
+         322.010009765625,
+         314.82000732421875,
+         307.760009765625,
+         306.79998779296875,
+         null,
+         304.7699890136719
+        ],
+        "close": [
+         326.55999755859375,
+         321.6000061035156,
+         308.05999755859375,
+         330.1700134277344,
+         null,
+         314.5899963378906
+        ],
+        "volume": [
+         3522600,
+         4537400,
+         10960500,
+         5991100,
+         null,
+         5224493
+        ]
+       }
+      ]
+     }
+    }
+   ],
+   "error": null
+  }
+ },
+ "range_1d": {
+  "chart": {
+   "result": [
+    {
+     "meta": {
+      "currency": "USD",
+      "symbol": "APP",
+      "exchangeName": "NMS",
+      "instrumentType": "EQUITY",
+      "regularMarketTime": 1790189402,
+      "gmtoffset": -14400,
+      "timezone": "EDT",
+      "exchangeTimezoneName": "America/New_York",
+      "regularMarketPrice": 314.59,
+      "chartPreviousClose": 328.73,
+      "currentTradingPeriod": {
+       "pre": {
+        "timezone": "EDT",
+        "start": 1790150400,
+        "end": 1790170200,
+        "gmtoffset": -14400
+       },
+       "regular": {
+        "timezone": "EDT",
+        "start": 1790170200,
+        "end": 1790193600,
+        "gmtoffset": -14400
+       },
+       "post": {
+        "timezone": "EDT",
+        "start": 1790193600,
+        "end": 1790208000,
+        "gmtoffset": -14400
+       }
+      },
+      "dataGranularity": "1d",
+      "range": "1d"
+     },
+     "timestamp": [
+      1790189402
+     ],
+     "indicators": {
+      "quote": [
+       {
+        "open": [
+         315.8999938964844
+        ],
+        "high": [
+         316.0
+        ],
+        "low": [
+         304.7699890136719
+        ],
+        "close": [
+         314.5899963378906
+        ],
+        "volume": [
+         5224493
+        ]
+       }
+      ]
+     }
+    }
+   ],
+   "error": null
+  }
+ }
+}

@@ -1,0 +1,83 @@
+{
+  "id": "macro-desk",
+  "name": "Macro Desk",
+  "description": "Typed tools that read and write the Macro Dashboard feeds through the repository's `macro-agent desk` command.",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "required": [
+      "repoPath"
+    ],
+    "properties": {
+      "repoPath": {
+        "type": "string",
+        "description": "Absolute path of the Macro Dashboard repository."
+      },
+      "uvPath": {
+        "type": "string",
+        "description": "Absolute path of the uv binary."
+      },
+      "mode": {
+        "anyOf": [
+          {
+            "type": "string",
+            "const": "shadow"
+          },
+          {
+            "type": "string",
+            "const": "live"
+          }
+        ],
+        "description": "shadow forces --dry-run on every submit (the trial); live writes the feeds."
+      },
+      "readTimeoutMs": {
+        "type": "integer",
+        "minimum": 5000,
+        "maximum": 85000
+      },
+      "writeTimeoutMs": {
+        "type": "integer",
+        "minimum": 5000,
+        "maximum": 85000
+      }
+    },
+    "additionalProperties": false
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "desk_context",
+      "catalysts_list",
+      "catalysts_submit",
+      "tail_risks_list",
+      "tail_risks_submit",
+      "positions_read",
+      "holdings_watch_submit"
+    ]
+  },
+  "toolMetadata": {
+    "desk_context": {
+      "optional": true
+    },
+    "catalysts_list": {
+      "optional": true
+    },
+    "catalysts_submit": {
+      "optional": true
+    },
+    "tail_risks_list": {
+      "optional": true
+    },
+    "tail_risks_submit": {
+      "optional": true
+    },
+    "positions_read": {
+      "optional": true
+    },
+    "holdings_watch_submit": {
+      "optional": true
+    }
+  }
+}

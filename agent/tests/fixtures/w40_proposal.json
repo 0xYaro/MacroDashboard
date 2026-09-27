@@ -1,0 +1,838 @@
+{
+  "week": "2026-W40",
+  "phase_calls": [
+    {
+      "asset": "equities",
+      "change_note": "Same Phase 3 as last week. The share of stocks above their 200-day average slipped from 50% to 49.5%, while junk bonds and the VIX stayed calm. Nothing moved it toward Contraction or back to Expansion."
+    },
+    {
+      "asset": "crypto",
+      "change_note": "Same Phase 1 as last week. BTC rose above $80K and the mood hit its high for this run. But ETF inflows of +$6.2M for the week are not the steady flow Wealth Creation needs."
+    }
+  ],
+  "scenario_set": {
+    "synthesis": "Markets are shrugging off the risks. The Fed raised rates with the ten-year Treasury yield at 5% and the Strait of Hormuz closed. Yet the VIX fell to its lowest level in this stretch. The strain shows in which stocks are rising: fewer and fewer of them. Crypto broke $80K for a different reason. So stocks and crypto now move on different drivers and get separate rows. Two events decide the week ahead. First, the Oct 6-8 Treasury auctions: will buyers again demand a record-high yield, as at the 20-year sale? Second, memory chips: can they keep up a group of AI stocks that now draws nine of every ten new AI dollars?",
+    "probability_check": "Our most likely scenario scored 5.0 of the last 8 graded weeks. It came fully true once. Its average Brier score, a measure of forecast error where lower is better, was 0.24 across four scored weeks. The record shows it usually gets the direction right but comes only partly true. That argues for tighter target ranges, not a higher probability. It stays at 45%.",
+    "swing_variables": [
+      {
+        "name": "The Oct 6-8 Treasury auctions (3-year, 10-year, 30-year)",
+        "cool": "the auctions sell near expected yields and the 10-year yield falls back under 4.95%",
+        "hot": "a second record-weak auction, with the 10-year yield above 5.12%"
+      },
+      {
+        "name": "Micron's results on Sep 30 (Q4 FY2026)",
+        "cool": "strong prices for AI memory chips (HBM) and a raised forecast lift more stocks along with memory",
+        "hot": "customers push back on memory prices up five- to sevenfold. Investors then rush out of AI stocks, the only group still lifting the index"
+      },
+      {
+        "name": "Oil, as the East-West pipeline restarts before OPEC+ meets on Oct 4",
+        "cool": "the pipeline fully restarts and Brent oil falls under $92",
+        "hot": "Houthi attacks like the one on Sep 19 hit the repaired pipeline, and Brent rises above $115"
+      },
+      {
+        "name": "The SEC's crypto rules, ahead of the Oct 20 comment deadline",
+        "cool": "the SEC widens its crypto exemption, and money flows into BTC funds to back up the price jump",
+        "hot": "the comments narrow what the rule covers, and the demand for tokenised stocks that lifted SOL fades"
+      }
+    ],
+    "rules_waived": [],
+    "scenarios": [
+      {
+        "ordinal": 1,
+        "probability": 45,
+        "title": "Few stocks rise, yields stay high, memory chips lead",
+        "positioning": "Hold quality stocks at the low end of the target range. Memory stays the CRITICAL holding, but buy no more of it before Sep 30. Buy no more index funds until 55% of S&P 500 stocks are back above their 200-day average.",
+        "clauses": [
+          {
+            "ordinal": 1,
+            "required": false,
+            "kind": "expr",
+            "expr": {
+              "all": [
+                {
+                  "op": "gte",
+                  "series": "auction_bid_to_cover_10y",
+                  "value": 2.4
+                },
+                {
+                  "op": "lte",
+                  "series": "auction_high_yield_30y",
+                  "value": 5.52
+                }
+              ]
+            },
+            "text": "The Oct 6-8 Treasury auctions go well. 10-year demand is at least 2.40 times the amount sold, and the 30-year yield is 5.52% or less",
+            "catalyst_id": "CATALYST:Oct 6-8 auction cluster"
+          },
+          {
+            "ordinal": 2,
+            "required": false,
+            "kind": "expr",
+            "expr": {
+              "op": "between",
+              "series": "pce_core_mom",
+              "lo": 0.2,
+              "hi": 0.3
+            },
+            "text": "Core PCE inflation, out Sep 30, rises 0.2-0.3% from the month before",
+            "catalyst_id": "CATALYST:Q2 GDP third estimate and August PCE"
+          },
+          {
+            "ordinal": 3,
+            "required": false,
+            "kind": "expr",
+            "expr": {
+              "op": "between",
+              "series": "fedwatch_hike_prob_next",
+              "lo": 40,
+              "hi": 60
+            },
+            "text": "Markets see about even odds of a rate hike on Oct 28: between 40% and 60%",
+            "catalyst_id": null
+          },
+          {
+            "ordinal": 4,
+            "required": false,
+            "kind": "manual",
+            "expr": null,
+            "text": "Micron confirms high prices for its AI memory chips on Sep 30",
+            "catalyst_id": "CATALYST:Micron Q4 FY2026",
+            "asserted_status": "not yet",
+            "asserted_text": "The print has not been made, and no series carries a company's guide."
+          },
+          {
+            "ordinal": 5,
+            "required": false,
+            "kind": "expr",
+            "text": "Brent oil stays between $92 and $112 as the East-West pipeline restarts in stages",
+            "expr": {
+              "op": "between",
+              "series": "brent",
+              "lo": 92,
+              "hi": 112
+            }
+          }
+        ],
+        "targets": [
+          {
+            "label": "S&P 500 (cash)",
+            "kind": "band",
+            "series_key": "spx_cash",
+            "comparator": "between",
+            "lo": "7520",
+            "hi": "7800"
+          },
+          {
+            "label": "% S&P above 200dma",
+            "kind": "band",
+            "series_key": "breadth_spx_above_200dma",
+            "comparator": "between",
+            "lo": "44",
+            "hi": "55"
+          },
+          {
+            "label": "Russell 2000 (cash)",
+            "kind": "band",
+            "series_key": "rut_cash",
+            "comparator": "between",
+            "lo": "2780",
+            "hi": "2930"
+          },
+          {
+            "label": "HY credit spread (OAS)",
+            "kind": "band",
+            "series_key": "hy_oas_bps",
+            "comparator": "between",
+            "lo": "262",
+            "hi": "292"
+          },
+          {
+            "label": "VIX",
+            "kind": "band",
+            "series_key": "vix",
+            "comparator": "between",
+            "lo": "13",
+            "hi": "19"
+          },
+          {
+            "label": "Leadership",
+            "kind": "manual",
+            "text": "Nasdaq beats the Dow again and memory leads the Nasdaq"
+          },
+          {
+            "label": "BTC",
+            "kind": "band",
+            "series_key": "btc",
+            "comparator": "between",
+            "lo": "76000",
+            "hi": "88000"
+          },
+          {
+            "label": "ETH",
+            "kind": "band",
+            "series_key": "eth",
+            "comparator": "between",
+            "lo": "2480",
+            "hi": "2980"
+          },
+          {
+            "label": "BTC ETF weekly flow",
+            "kind": "band",
+            "series_key": "btc_etf_weekly_flow",
+            "comparator": "between",
+            "lo": "0",
+            "hi": "700000000"
+          },
+          {
+            "label": "2Y Treasury Yield",
+            "kind": "band",
+            "series_key": "ust_2y",
+            "comparator": "between",
+            "lo": "4.66",
+            "hi": "4.92"
+          },
+          {
+            "label": "10Y Treasury Yield",
+            "kind": "band",
+            "series_key": "ust_10y",
+            "comparator": "between",
+            "lo": "4.90",
+            "hi": "5.12"
+          },
+          {
+            "label": "30Y Treasury Yield",
+            "kind": "band",
+            "series_key": "ust_30y",
+            "comparator": "between",
+            "lo": "5.24",
+            "hi": "5.52"
+          },
+          {
+            "label": "Gold (GC=F)",
+            "kind": "band",
+            "series_key": "gold",
+            "comparator": "between",
+            "lo": "4280",
+            "hi": "4620"
+          },
+          {
+            "label": "Brent Crude (BZ=F)",
+            "kind": "band",
+            "series_key": "brent",
+            "comparator": "between",
+            "lo": "92",
+            "hi": "112"
+          }
+        ]
+      },
+      {
+        "ordinal": 2,
+        "probability": 32,
+        "title": "Bonds sell off and 5% yields finally hurt stocks",
+        "positioning": "Sell the most volatile stocks, not the quality ones, but only once a second warning sign appears. Keep cash to buy if the S&P 500 falls back to its rising 200-day average. Do not use gold or crypto to protect the stock holdings.",
+        "clauses": [
+          {
+            "ordinal": 1,
+            "required": false,
+            "kind": "expr",
+            "expr": {
+              "any": [
+                {
+                  "op": "lt",
+                  "series": "auction_bid_to_cover_10y",
+                  "value": 2.4
+                },
+                {
+                  "op": "gt",
+                  "series": "auction_high_yield_30y",
+                  "value": 5.52
+                }
+              ]
+            },
+            "text": "A second weak auction on Oct 6-8. 10-year demand is under 2.40 times the amount sold, or the 30-year yield is above 5.52%",
+            "catalyst_id": "CATALYST:Oct 6-8 auction cluster"
+          },
+          {
+            "ordinal": 2,
+            "required": false,
+            "kind": "manual",
+            "expr": null,
+            "text": "or the Fed's lender survey on Oct 6-8 shows credit getting tighter",
+            "catalyst_id": "CATALYST:Oct 6-8 auction cluster",
+            "asserted_status": "not yet",
+            "asserted_text": "No series carries the Senior Credit Officer survey, so this half of the sentence is read rather than measured. It was split out of the auction clause instead of riding on it, because a typed expression whose text still asserted the survey would report met on half its evidence."
+          },
+          {
+            "ordinal": 3,
+            "required": false,
+            "kind": "manual",
+            "expr": null,
+            "text": "or a shock with no date. It could be a far cheaper AI model, big tech cutting data center spend, or a wave of private loan losses",
+            "catalyst_id": null,
+            "asserted_status": "not yet",
+            "asserted_text": "By construction no calendar carries this clause; it is the R6 reservation."
+          },
+          {
+            "ordinal": 4,
+            "required": false,
+            "kind": "predicate",
+            "text": "the 10-year yield closes above 5.12% within ten trading days",
+            "expr": {
+              "predicate": "crossed_within",
+              "args": {
+                "series": "ust_10y",
+                "level": "5.12",
+                "direction": "above",
+                "within_sessions": 10
+              }
+            }
+          },
+          {
+            "ordinal": 5,
+            "required": true,
+            "kind": "expr",
+            "text": "and at least one sign of stress. That means the VIX above 20, junk bonds over 300 basis points, or under 45% of S&P 500 stocks above their 200-day average",
+            "expr": {
+              "n_of": 1,
+              "of": [
+                {
+                  "op": "gt",
+                  "series": "vix",
+                  "value": 20
+                },
+                {
+                  "op": "gt",
+                  "series": "hy_oas_bps",
+                  "value": 300
+                },
+                {
+                  "op": "lt",
+                  "series": "breadth_spx_above_200dma",
+                  "value": 45
+                }
+              ]
+            }
+          }
+        ],
+        "targets": [
+          {
+            "label": "S&P 500 (cash)",
+            "kind": "band",
+            "series_key": "spx_cash",
+            "comparator": "between",
+            "lo": "7230",
+            "hi": "7520"
+          },
+          {
+            "label": "% S&P above 200dma",
+            "kind": "band",
+            "series_key": "breadth_spx_above_200dma",
+            "comparator": "between",
+            "lo": "36",
+            "hi": "46"
+          },
+          {
+            "label": "Russell 2000 (cash)",
+            "kind": "band",
+            "series_key": "rut_cash",
+            "comparator": "between",
+            "lo": "2600",
+            "hi": "2790"
+          },
+          {
+            "label": "HY credit spread (OAS)",
+            "kind": "band",
+            "series_key": "hy_oas_bps",
+            "comparator": "between",
+            "lo": "300",
+            "hi": "350"
+          },
+          {
+            "label": "VIX",
+            "kind": "band",
+            "series_key": "vix",
+            "comparator": "between",
+            "lo": "20",
+            "hi": "30"
+          },
+          {
+            "label": "Leadership",
+            "kind": "manual",
+            "text": "Memory and AI infrastructure stocks do worse than the index. The most popular trade falls first."
+          },
+          {
+            "label": "BTC",
+            "kind": "band",
+            "series_key": "btc",
+            "comparator": "between",
+            "lo": "64000",
+            "hi": "76000"
+          },
+          {
+            "label": "ETH",
+            "kind": "band",
+            "series_key": "eth",
+            "comparator": "between",
+            "lo": "2020",
+            "hi": "2480"
+          },
+          {
+            "label": "10Y Treasury Yield",
+            "kind": "band",
+            "series_key": "ust_10y",
+            "comparator": "between",
+            "lo": "5.12",
+            "hi": "5.38"
+          },
+          {
+            "label": "30Y Treasury Yield",
+            "kind": "band",
+            "series_key": "ust_30y",
+            "comparator": "between",
+            "lo": "5.52",
+            "hi": "5.85"
+          },
+          {
+            "label": "Brent Crude (BZ=F)",
+            "kind": "band",
+            "series_key": "brent",
+            "comparator": "between",
+            "lo": "88",
+            "hi": "115"
+          },
+          {
+            "label": "2Y Treasury Yield",
+            "kind": "manual",
+            "text": "Unclear. A growth scare and the Fed's 2027 rate forecasts pull short-term rates both ways, so no one range fits this case."
+          },
+          {
+            "label": "Gold (GC=F)",
+            "kind": "manual",
+            "text": "$4,150-$4,400 if investors sell to raise cash, or $4,500-$4,850 if they demand more yield for long-term bonds and buy gold. It depends which one happens. Two separate ranges are not one target range."
+          }
+        ]
+      },
+      {
+        "ordinal": 3,
+        "probability": 23,
+        "title": "Cheaper oil cools inflation and more stocks join the rise",
+        "positioning": "Buy more stocks, up to the middle of the target range, but only after 55% of S&P 500 stocks are back above their 200-day average. Buy more crypto only after a week when money flows into crypto funds. Do not buy on price alone.",
+        "clauses": [
+          {
+            "ordinal": 1,
+            "required": false,
+            "kind": "expr",
+            "text": "The East-West pipeline fully restarts or Oman reschedules, taking Brent oil under $92",
+            "expr": {
+              "op": "lt",
+              "series": "brent",
+              "value": 92
+            }
+          },
+          {
+            "ordinal": 2,
+            "required": false,
+            "kind": "expr",
+            "expr": {
+              "all": [
+                {
+                  "op": "lte",
+                  "series": "pce_core_mom",
+                  "value": 0.2
+                },
+                {
+                  "op": "lt",
+                  "series": "jolts_openings",
+                  "value": 7.2
+                },
+                {
+                  "op": "lt",
+                  "series": "payrolls_change",
+                  "value": 125
+                },
+                {
+                  "op": "lt",
+                  "series": "fedwatch_hike_prob_next",
+                  "value": 40
+                }
+              ]
+            },
+            "text": "Core PCE inflation at or under 0.2%, job openings under 7.2m and new jobs under 125K. That pushes the odds of an Oct 28 rate hike under 40%.",
+            "catalyst_id": "CATALYST:September Employment Situation"
+          },
+          {
+            "ordinal": 3,
+            "required": false,
+            "kind": "expr",
+            "expr": {
+              "all": [
+                {
+                  "op": "gte",
+                  "series": "auction_bid_to_cover_10y",
+                  "value": 2.55
+                },
+                {
+                  "op": "lte",
+                  "series": "auction_high_yield_30y",
+                  "value": 5.4
+                }
+              ]
+            },
+            "text": "The Oct 6-8 auctions go very well. 10-year demand is at least 2.55 times the amount sold, and the 30-year yield is 5.40% or less",
+            "catalyst_id": "CATALYST:Oct 6-8 auction cluster"
+          },
+          {
+            "ordinal": 4,
+            "required": false,
+            "kind": "expr",
+            "text": "at least 55% of S&P 500 stocks are back above their 200-day average",
+            "expr": {
+              "op": "gte",
+              "series": "breadth_spx_above_200dma",
+              "value": 55
+            }
+          }
+        ],
+        "targets": [
+          {
+            "label": "S&P 500 (cash)",
+            "kind": "band",
+            "series_key": "spx_cash",
+            "comparator": "between",
+            "lo": "7800",
+            "hi": "8000"
+          },
+          {
+            "label": "% S&P above 200dma",
+            "kind": "band",
+            "series_key": "breadth_spx_above_200dma",
+            "comparator": "between",
+            "lo": "55",
+            "hi": "66"
+          },
+          {
+            "label": "Russell 2000 (cash)",
+            "kind": "band",
+            "series_key": "rut_cash",
+            "comparator": "between",
+            "lo": "2930",
+            "hi": "3070"
+          },
+          {
+            "label": "HY credit spread (OAS)",
+            "kind": "band",
+            "series_key": "hy_oas_bps",
+            "comparator": "between",
+            "lo": "242",
+            "hi": "266"
+          },
+          {
+            "label": "VIX",
+            "kind": "band",
+            "series_key": "vix",
+            "comparator": "between",
+            "lo": "11.5",
+            "hi": "15"
+          },
+          {
+            "label": "Leadership",
+            "kind": "manual",
+            "text": "Small caps (the Russell 2000) and the average stock beat the Nasdaq for the first time since August"
+          },
+          {
+            "label": "BTC",
+            "kind": "band",
+            "series_key": "btc",
+            "comparator": "between",
+            "lo": "86000",
+            "hi": "96000"
+          },
+          {
+            "label": "ETH",
+            "kind": "band",
+            "series_key": "eth",
+            "comparator": "between",
+            "lo": "2950",
+            "hi": "3400"
+          },
+          {
+            "label": "BTC ETF weekly flow",
+            "kind": "band",
+            "series_key": "btc_etf_weekly_flow",
+            "comparator": "gt",
+            "lo": "700000000"
+          },
+          {
+            "label": "2Y Treasury Yield",
+            "kind": "band",
+            "series_key": "ust_2y",
+            "comparator": "between",
+            "lo": "4.44",
+            "hi": "4.70"
+          },
+          {
+            "label": "10Y Treasury Yield",
+            "kind": "band",
+            "series_key": "ust_10y",
+            "comparator": "between",
+            "lo": "4.62",
+            "hi": "4.92"
+          },
+          {
+            "label": "30Y Treasury Yield",
+            "kind": "band",
+            "series_key": "ust_30y",
+            "comparator": "between",
+            "lo": "5.00",
+            "hi": "5.28"
+          },
+          {
+            "label": "Gold (GC=F)",
+            "kind": "band",
+            "series_key": "gold",
+            "comparator": "between",
+            "lo": "4200",
+            "hi": "4500"
+          },
+          {
+            "label": "Brent Crude (BZ=F)",
+            "kind": "band",
+            "series_key": "brent",
+            "comparator": "between",
+            "lo": "80",
+            "hi": "95"
+          }
+        ]
+      }
+    ]
+  },
+  "strategies": [
+    {
+      "asset": "equities",
+      "stance": "Selective. Treat the index as a bet on rates. That holds while under 55% of S&P 500 stocks are above their 200-day average.",
+      "posture": "Hold, and shift toward quality stocks. The fresh read is Phase 3, and all four of its conditions hold. Junk bonds and the VIX show no sign of a downturn.",
+      "exposure_lo": "25",
+      "exposure_hi": "50",
+      "exposure_operated_lo": "35",
+      "exposure_operated_hi": "40",
+      "sector_focus": [
+        {
+          "band": "CRITICAL",
+          "text": "Memory chips, including AI memory (HBM). The biggest buyer, not the sellers, confirmed the shortage, so Micron's Sep 30 results decide the group."
+        },
+        {
+          "band": "HOLD",
+          "text": "Asian banks that lend out deposits, which earn more as the gap between long-term and short-term rates widens. Also energy, while the East-West pipeline is only half back."
+        },
+        {
+          "band": "WATCH",
+          "text": "AI data center firms that borrow to grow. Their power to raise prices and a billion-dollar half-year loss both come from the same flood of money."
+        },
+        {
+          "band": "AVOID",
+          "text": "Small companies hurt by high rates, and shops selling things people can skip. The Russell 2000 fell again, and a strong retail sales number came mostly from gasoline."
+        }
+      ],
+      "holdings_check": [
+        {
+          "ticker": "MU",
+          "action": "keep",
+          "band": "CRITICAL",
+          "text": "A bet on the Sep 30 results. Buy no more before they come out."
+        },
+        {
+          "ticker": "SKHY",
+          "action": "keep",
+          "band": "CRITICAL",
+          "text": "The more popular of our two memory holdings. Its venture arm changes nothing this week."
+        },
+        {
+          "ticker": "NBIS",
+          "action": "keep",
+          "band": "WATCH",
+          "text": "Hold, but buy no more while the S2 bond sell-off is possible."
+        },
+        {
+          "ticker": "012330",
+          "action": "trim",
+          "band": null,
+          "text": "No focus area supports it, and it has not earned its place for a third week."
+        },
+        {
+          "ticker": "D05",
+          "action": "keep",
+          "band": "HOLD",
+          "text": "The wider gap between 2-year and 10-year yields grows the profit boost a rate-raising Fed already gave banks."
+        }
+      ]
+    },
+    {
+      "asset": "crypto",
+      "stance": "Selective and positive. Buy more when fund inflows confirm the move, not because the price rose.",
+      "posture": "Hold. The fresh read is Phase 1, and all four of its conditions hold. What it lacks for Wealth Creation is steady ETF inflows.",
+      "exposure_lo": "50",
+      "exposure_hi": "110",
+      "exposure_operated_lo": "60",
+      "exposure_operated_hi": "70",
+      "sector_focus": [
+        {
+          "band": "CRITICAL",
+          "text": "SOL. The SEC's new exemption names the network where about $465m of stocks already trade as tokens."
+        },
+        {
+          "band": "HOLD",
+          "text": "BTC. It rose above $80K, but because traders betting on a fall had to buy back, with almost no ETF inflows."
+        },
+        {
+          "band": "WATCH",
+          "text": "ETH. The price climbed back to $2,600 while its own ETFs sold $140.6M. That is crypto's clearest case of price and fund flows pointing opposite ways."
+        },
+        {
+          "band": "AVOID",
+          "text": "Chasing the token news into side bets that are hard to sell, before the SEC's Oct 20 deadline."
+        }
+      ],
+      "holdings_check": [
+        {
+          "ticker": "RIOT",
+          "action": "keep",
+          "band": "WATCH",
+          "text": "Our most volatile holding tied to crypto policy. It is sized as that, not as a bet on bitcoin mining."
+        },
+        {
+          "ticker": "GLXY",
+          "action": "keep",
+          "band": "HOLD",
+          "text": "A bet on crypto policy, plus an option on the Texas power grid (ERCOT)."
+        }
+      ]
+    }
+  ],
+  "setups": [
+    {
+      "asset": "equities",
+      "name": "S&P FOMC-shelf FTR long",
+      "style": "FTR, HTF",
+      "series_key": "spx_cash",
+      "entry_lo": "7500",
+      "entry_hi": "7560",
+      "invalidation": "7450",
+      "invalidation_dir": "below",
+      "target": "7800",
+      "rr_planned": "3.4",
+      "band": "HOLD",
+      "gate_text": "Both must hold on the entry close. Junk bonds pay under 292 basis points, and at least 45% of S&P 500 stocks are above their 200-day average",
+      "gate_expr": {
+        "predicate": "gate_at_entry",
+        "args": {
+          "series": "spx_cash",
+          "entry_lo": 7500,
+          "entry_hi": 7560,
+          "within_sessions": 5,
+          "gate": {
+            "all": [
+              {
+                "op": "lt",
+                "series": "hy_oas_bps",
+                "value": 292
+              },
+              {
+                "op": "gte",
+                "series": "breadth_spx_above_200dma",
+                "value": 45
+              }
+            ]
+          }
+        }
+      },
+      "rationale": "The gate is credit-and-floor rather than rising-breadth after three straight weeks of a self-contradicting breadth clause."
+    },
+    {
+      "asset": "equities",
+      "name": "Nasdaq failed-push fade",
+      "style": "O/U, HTF",
+      "series_key": "nasdaq_cash",
+      "entry_lo": "26900",
+      "entry_hi": "27100",
+      "invalidation": "27300",
+      "invalidation_dir": "above",
+      "target": "26100",
+      "rr_planned": "3.0",
+      "band": "CRITICAL",
+      "gate_text": "under 52% of S&P 500 stocks above their 200-day average on the entry close",
+      "gate_expr": {
+        "predicate": "gate_at_entry",
+        "args": {
+          "series": "nasdaq_cash",
+          "entry_lo": 26900,
+          "entry_hi": 27100,
+          "within_sessions": 5,
+          "gate": {
+            "op": "lt",
+            "series": "breadth_spx_above_200dma",
+            "value": 52
+          }
+        }
+      },
+      "rationale": "Sized small as a hedge on the one leg holding the index up; taken only on a failure, never on strength."
+    },
+    {
+      "asset": "crypto",
+      "name": "BTC $82K acceptance retest",
+      "style": "FTR, HTF",
+      "series_key": "btc",
+      "entry_lo": "78500",
+      "entry_hi": "80500",
+      "invalidation": "76000",
+      "invalidation_dir": "below",
+      "target": "92000",
+      "rr_planned": "3.6",
+      "band": "HOLD",
+      "gate_text": "after a daily close above $82,000, when a pullback holds and weekly ETF flows are still positive",
+      "gate_expr": {
+        "predicate": "gate_at_entry",
+        "args": {
+          "series": "btc",
+          "entry_lo": 78500,
+          "entry_hi": 80500,
+          "within_sessions": 10,
+          "gate": {
+            "all": [
+              {
+                "predicate": "crossed_within",
+                "args": {
+                  "series": "btc",
+                  "level": 82000,
+                  "direction": "above",
+                  "within_sessions": 10
+                }
+              },
+              {
+                "op": "gt",
+                "series": "btc_etf_weekly_flow",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "rationale": "The acceptance clause exists because $80K has now rejected twice and been cleared once on a squeeze."
+    },
+    {
+      "asset": "crypto",
+      "name": "ETH breakout-shelf FTR",
+      "style": "FTR, HTF",
+      "series_key": "eth",
+      "entry_lo": "2480",
+      "entry_hi": "2560",
+      "invalidation": "2380",
+      "invalidation_dir": "below",
+      "target": "3050",
+      "rr_planned": "3.8",
+      "band": "WATCH",
+      "gate_text": null,
+      "gate_expr": null,
+      "rationale": "The W38 ETF-flows-positive clause stays dropped: it blocked a structurally correct entry for roughly +1.7R, and the higher low at $2,358 is the structure the trade is built on."
+    }
+  ]
+}

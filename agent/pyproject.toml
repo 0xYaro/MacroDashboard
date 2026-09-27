@@ -1,0 +1,122 @@
+[project]
+name = "macro-agent"
+version = "0.1.0"
+description = "The judgment run: the narrative half of the 09:30 full run, and Monday's grade-and-author pass"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "asyncpg>=0.30",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+    "textstat>=0.7.13",
+]
+
+[project.scripts]
+macro-agent = "macro_agent.cli:run"
+
+[dependency-groups]
+dev = [
+    "asyncpg-stubs>=0.30",
+    "mypy>=1.11",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+    "types-pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/macro_agent"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "ANN", "ARG", "B", "C4", "E", "F", "I", "N", "PTH", "RET", "RUF", "SIM", "UP", "W",
+]
+ignore = [
+    # The prompts ported from gather.workflow.js and the sentences this package
+    # writes carry real typographic dashes and a real unicode minus. Rewriting
+    # them to ASCII would change a prompt that has been proven over twelve weeks
+    # and a sentence the web app renders verbatim.
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    # `Refused` and `Unevaluable` are outcomes this package expects and handles,
+    # not errors in the programming sense.
+    "N818",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN001", "ANN002", "ANN003", "ANN201", "ANN202", "ANN401", "ARG001", "ARG002", "SLF001", "E501"]
+# A model's return is arbitrary decoded JSON by construction: these are the
+# modules whose job is to decide whether it is a valid one.
+"src/macro_agent/validate.py" = ["ANN401"]
+"src/macro_agent/narrative.py" = ["ANN401"]
+"src/macro_agent/preflight.py" = ["ANN401"]
+"src/macro_agent/context.py" = ["ANN401"]
+# An asyncpg row value is `Any` at the driver boundary.
+"src/macro_agent/store.py" = ["ANN401"]
+# The bridge's whole job is to hand back modules whose types it does not own,
+# and the three modules below take those modules or take decoded JSON.
+"src/macro_agent/worker_bridge.py" = ["ANN401"]
+# Every subcommand takes the same two arguments so that one dispatch table can
+# hold them; a handler that needs neither still declares both.
+"src/macro_agent/cli.py" = ["ANN401", "ARG001"]
+"src/macro_agent/grade.py" = ["ANN401"]
+"src/macro_agent/authoring.py" = ["ANN401"]
+# The desk command decodes what an OpenClaw tool sent and what a price source
+# served, and takes the worker's modules through the bridge: all of it is
+# arbitrary JSON or an untyped module until validated.
+"src/macro_agent/desk.py" = ["ANN401"]
+"src/macro_agent/desk_validate.py" = ["ANN401"]
+"src/macro_agent/desk_store.py" = ["ANN401"]
+"src/macro_agent/desk_cli.py" = ["ANN401", "ARG001"]
+"src/macro_agent/desk_compare.py" = ["ANN401"]
+"src/macro_agent/prices.py" = ["ANN401"]
+# The prompt text is long lines by nature: it is a verbatim port.
+"src/macro_agent/prompts.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests"]
+strict = true
+warn_unreachable = true
+
+# The suite is deliberately written with loose fakes: a model's return is a bare
+# dict and a helper that builds one is clearer without a full annotation of a
+# shape the model does not promise. Everything in `src` stays strict.
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+warn_return_any = false
+disallow_any_generics = false
+disable_error_code = ["comparison-overlap", "union-attr", "operator", "arg-type", "index", "attr-defined", "no-any-return"]
+
+[[tool.mypy.overrides]]
+module = ["macro_agent.worker_bridge"]
+# The bridge loads the worker's pure modules by path. They are typed, but they
+# are not on this project's import graph, so mypy cannot follow them.
+ignore_missing_imports = true
+disallow_any_explicit = false
+
+[[tool.mypy.overrides]]
+# textstat ships no type information. It is called in one place, `voice.grade`,
+# and the result is coerced to a float there.
+module = ["textstat"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["error"]

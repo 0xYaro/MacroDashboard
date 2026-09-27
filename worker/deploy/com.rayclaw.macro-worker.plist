@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd user agent for the MacroDashboard worker.
+
+  This agent is NOT KeepAlive. The Accounting worker is an always-on process
+  with a websocket to hold open; this one is two scheduled runs a day and
+  nothing in between. A KeepAlive agent over a run that exits in ninety seconds
+  is a crash loop that hammers ten public endpoints all day.
+
+  StartCalendarInterval fires 09:30 and 21:00 in the machine's local time zone,
+  which is Asia/Singapore on the operator's Mac mini. launchd has no time-zone
+  key: if the machine's zone is ever changed, both runs move with it, and that
+  is the one thing to check after a move.
+
+  A run missed because the machine was asleep is run once on wake, which is
+  what this system wants: every source it owns is replayable or is honestly
+  recorded as a permanent gap, and the catch-up is computed from each series'
+  declared release rule rather than from how long the machine was off.
+
+  install.sh rewrites WORKER_DIR, UV_BIN, PATH and HOME below to match the
+  machine it runs on, so the literals here are placeholders. Do not edit this
+  file to point at your own paths: run install.sh.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.rayclaw.macro-worker</string>
+
+  <!--
+    `uv run` resolves the project in WorkingDirectory, so the worker always runs
+    against worker/pyproject.toml and its own locked environment.
+
+    The mode flag is chosen at run time from the local hour, because one agent
+    with two calendar intervals cannot pass different arguments to each. The
+    09:30 run is full and the 21:00 run is the deterministic rescore.
+  -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>if [ "$(date +%H)" -lt 12 ]; then exec "__UV_BIN__" run --frozen macro-worker --full; else exec "__UV_BIN__" run --frozen macro-worker --rescore; fi</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__WORKER_DIR__</string>
+
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key><integer>9</integer>
+      <key>Minute</key><integer>30</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>21</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+  </array>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <!--
+    launchd gives an agent almost no environment. `uv` needs PATH and HOME to
+    find its cache and the managed Python; without HOME it re-downloads an
+    interpreter into a temporary directory on every run.
+  -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>__PATH__</string>
+    <key>HOME</key>
+    <string>__HOME__</string>
+    <key>LOG_LEVEL</key>
+    <string>INFO</string>
+    <!-- Python must not buffer, or the log files stay empty until it exits. -->
+    <key>PYTHONUNBUFFERED</key>
+    <string>1</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>__LOG_DIR__/worker.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__LOG_DIR__/worker.err.log</string>
+</dict>
+</plist>

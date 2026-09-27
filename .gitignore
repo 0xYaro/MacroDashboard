@@ -1,0 +1,13 @@
+.DS_Store
+# Every .env variant holds credentials (and supabase/desk_role.py's temporary
+# copy, should one survive a crash); only the example is committed.
+.env*
+!.env.example
+.lavish/
+__pycache__/
+.ruff_cache/
+node_modules/
+.next/
+*.tsbuildinfo
+# Supabase CLI cache (project ref, pooler URL); machine state, not source.
+supabase/.temp/

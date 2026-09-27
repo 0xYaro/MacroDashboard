@@ -1,0 +1,35 @@
+{
+  "name": "openclaw-plugin-macro-desk",
+  "version": "0.1.0",
+  "description": "Typed OpenClaw tools that run the Macro Dashboard `macro-agent desk` commands.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "plugin:build": "npm run build && openclaw plugins build --entry ./dist/index.js",
+    "plugin:validate": "npm run build && openclaw plugins validate --entry ./dist/index.js",
+    "test": "npm run build && node --test dist/index.test.js",
+    "smoke": "npm run build && node dist/smoke.js"
+  },
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "openclaw": ">=2026.5.17"
+  },
+  "dependencies": {
+    "typebox": "file:/opt/homebrew/lib/node_modules/openclaw/node_modules/typebox"
+  },
+  "devDependencies": {
+    "@types/node": "file:/opt/homebrew/lib/node_modules/openclaw/node_modules/@types/node",
+    "openclaw": "file:/opt/homebrew/lib/node_modules/openclaw",
+    "typescript": "file:/opt/homebrew/lib/node_modules/openclaw/node_modules/typescript"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  }
+}

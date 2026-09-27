@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Macro Dashboard system map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Tokens from web/app/globals.css, so the mocks read as the product. */
+:root{
+  --bg:#0b0f14; --surface:#151a20; --surface-raised:#1a2027;
+  --line:#252d35; --line-strong:#36414c;
+  --ink:#e7ecf0; --muted:#8b98a4; --faint:#6b7883;
+  --up:#63bc8a; --down:#e0736b;
+  --amber:#d2a63f; --violet:#a28bc4; --accent:#d8c79b;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+:where(p,h1,h2,h3,h4,li,dd,td,th){overflow-wrap:anywhere}
+img{max-width:100%;height:auto;display:block}
+html,body{margin:0;background:var(--bg);color:var(--ink);color-scheme:dark}
+body{font-family:var(--sans);font-size:14px;line-height:1.55;overflow-x:hidden}
+h1,h2,h3,h4{margin:0;line-height:1.25}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:12px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 90px}
+.top{position:sticky;top:0;z-index:40;display:flex;gap:14px;align-items:center;flex-wrap:wrap;
+  padding:12px 20px;border-bottom:1px solid var(--line);background:rgba(11,15,20,.96)}
+.mark{color:var(--accent);font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.top nav{display:flex;gap:12px;flex-wrap:wrap}
+.top nav a{color:var(--muted);font-family:var(--mono);font-size:10px;text-decoration:none;letter-spacing:.08em;text-transform:uppercase}
+.top nav a:hover{color:var(--ink)}
+.lede{padding:34px 0 24px;border-bottom:1px solid var(--line)}
+.lede h1{font-size:26px;font-weight:600}
+.lede p{max-width:78ch;color:var(--muted);margin:12px 0 0}
+h2.sec{font-size:11px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);
+  margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;font-weight:600;margin-bottom:8px}
+p{margin:0 0 10px}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:860px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.card.raised{background:var(--surface-raised)}
+.card .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.big{font-family:var(--mono);font-size:24px;font-weight:600}
+.chip{display:inline-flex;align-items:center;padding:2px 8px;border:1px solid;border-radius:999px;
+  font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.04em;white-space:nowrap;vertical-align:middle}
+.c-ok{border-color:rgba(99,188,138,.4);background:rgba(99,188,138,.09);color:var(--up)}
+.c-amb{border-color:rgba(210,166,63,.4);background:rgba(210,166,63,.09);color:var(--amber)}
+.c-red{border-color:rgba(224,115,107,.45);background:rgba(224,115,107,.09);color:var(--down)}
+.c-vio{border-color:rgba(162,139,196,.45);background:rgba(162,139,196,.09);color:var(--violet)}
+.c-mut{border-color:var(--line-strong);color:var(--muted)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.tbl th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+  padding:10px 12px;border-bottom:1px solid var(--line);font-weight:500}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td.n{font-family:var(--mono);white-space:nowrap}
+.verdict{border-left:3px solid var(--accent);padding:14px 18px;background:var(--surface);border-radius:0 10px 10px 0}
+.verdict ol{margin:8px 0 0;padding-left:20px}
+.verdict li{margin:6px 0}
+figure{margin:0}
+figure img{border:1px solid var(--line);border-radius:8px}
+figcaption{font-size:12px;color:var(--faint);margin-top:6px}
+.shot-crop{max-height:520px;overflow:hidden;border-radius:8px;border:1px solid var(--line)}
+.shot-crop img{border:0;border-radius:0}
+.mermaid{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto}
+.sm-wrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;overflow-x:auto}
+.sm{display:block;width:100%;min-width:900px;height:auto;font-family:var(--sans)}
+.sm-band{fill:#0f1419;stroke:#252d35}
+.sm-bl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;fill:#6b7883}
+.sm-col{stroke-width:1}.sm-col.ai{fill:rgba(162,139,196,.05);stroke:rgba(162,139,196,.3)}.sm-col.det{fill:rgba(99,188,138,.04);stroke:rgba(99,188,138,.28)}
+.sm-cl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em}.sm-cl.ai{fill:#a28bc4}.sm-cl.det{fill:#63bc8a}
+.sm-n rect,.sm-n circle,.sm-n path{stroke-width:1.2}
+.sm-n.ai rect{fill:#2a2238;stroke:#a28bc4}.sm-n.det rect{fill:#15261d;stroke:#63bc8a}.sm-n.hum rect,.sm-n.hum circle{fill:#2c2616;stroke:#d8c79b}
+.sm-n.ext rect{fill:#151a20;stroke:#36414c}.sm-n.st path{fill:#1a2027;stroke:#6b7883}.sm-n.st path.rim{fill:none}
+.sm-t{fill:#e7ecf0;font-size:13px;font-weight:600;text-anchor:middle}
+.sm-s{fill:#8b98a4;font-size:11px;text-anchor:middle}
+.sm-e{fill:none;stroke:#8b98a4;stroke-width:1.2}.sm-e.dash{stroke-dasharray:5 4;stroke:#6b7883}
+.sm-l{font-size:10.5px;fill:#b7c1ca;paint-order:stroke;stroke:#0f1419;stroke-width:4px}
+
+
+.opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer}
+.opt:hover{border-color:var(--line-strong)}
+.opt input{margin-top:4px;accent-color:#d8c79b}
+.opt b{font-weight:600}
+.opt .d{display:block;font-size:12.5px;color:var(--muted)}
+.rec{color:var(--accent);font-family:var(--mono);font-size:10px;margin-left:6px}
+.qfoot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.qfoot textarea{flex:1 1 280px;min-width:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:7px 9px;font:inherit;font-size:12.5px;min-height:36px}
+.qstate{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.qstate.done{color:var(--up)}
+.bef{border-left:3px solid var(--down);padding:8px 12px;background:rgba(224,115,107,.05);border-radius:0 8px 8px 0;font-size:13px}
+.aft{border-left:3px solid var(--up);padding:8px 12px;background:rgba(99,188,138,.05);border-radius:0 8px 8px 0;font-size:13px}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
+@media (max-width:860px){.pair{grid-template-columns:minmax(0,1fr)}}
+.pair .lab{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--faint);display:block;margin-bottom:3px}
+ul.tight{margin:6px 0 0;padding-left:18px} ul.tight li{margin:4px 0}
+.tl{margin:0;padding:0;list-style:none}
+.tl li{display:grid;grid-template-columns:70px minmax(0,1fr);gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+
+</style>
+</head>
+<body>
+
+<style>
+.ai{color:var(--violet)} .det{color:var(--up)} .hum{color:var(--accent)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:10px 0 0}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend .l-ai::before{background:#2a2238;border:1px solid var(--violet)}
+.legend .l-det::before{background:#15261d;border:1px solid var(--up)}
+.legend .l-hum::before{background:#2c2616;border:1px solid var(--accent)}
+.legend .l-st::before{background:#1a2027;border:1px solid var(--line-strong)}
+.find{display:grid;grid-template-columns:86px minmax(0,1fr);gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.find:last-child{border-bottom:0}
+.find .body p{margin:0 0 6px}
+.find .ev{font-size:12.5px;color:var(--muted)}
+.find .fix{font-size:12.5px;margin-top:4px}
+.find .fix b{color:var(--accent);font-weight:600}
+@media (max-width:640px){.find{grid-template-columns:minmax(0,1fr);gap:6px}}
+.day{margin:0;padding:0;list-style:none;position:relative}
+.day li{display:grid;grid-template-columns:96px 22px minmax(0,1fr);gap:10px;align-items:start;padding:8px 0;border-bottom:1px dashed var(--line)}
+.day .t{font-family:var(--mono);font-size:12px;color:var(--ink);padding-top:1px}
+.day .dot{width:12px;height:12px;border-radius:50%;margin-top:4px;border:2px solid}
+.day .dot.ai{border-color:var(--violet);background:rgba(162,139,196,.25)}
+.day .dot.det{border-color:var(--up);background:rgba(99,188,138,.2)}
+.day .dot.hum{border-color:var(--accent);background:rgba(216,199,155,.2)}
+.day .w{font-size:13px}
+.day .w small{display:block;color:var(--faint);font-size:12px;margin-top:2px}
+.aicard h3{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.aicard dl{display:grid;grid-template-columns:92px minmax(0,1fr);gap:6px 10px;margin:10px 0 0;font-size:12.5px}
+.aicard dt{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);padding-top:2px}
+.aicard dd{margin:0;color:var(--ink)}
+.layers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:860px){.layers{grid-template-columns:minmax(0,1fr)}}
+.layers .card{border-top:3px solid var(--line-strong)}
+.layers .card.l1{border-top-color:var(--up)} .layers .card.l2{border-top-color:var(--violet)} .layers .card.l3{border-top-color:var(--accent)}
+.lever{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.lever:last-child{border-bottom:0}
+.lever .num{font-family:var(--mono);font-size:18px;color:var(--accent);font-weight:600}
+.ok{color:var(--up)} .warn{color:var(--amber)} .bad{color:var(--down)}
+</style>
+<style>
+.sm-n.hl rect,.sm-n.hl path,.sm-n.hl circle{stroke:#d2a63f;stroke-width:2.4}
+.sm-n.hl{filter:drop-shadow(0 0 6px rgba(210,166,63,.55))}
+.sm-badge circle{fill:#d2a63f;stroke:#0b0f14;stroke-width:2}
+.sm-badge text{fill:#0b0f14;font-family:var(--mono);font-size:11px;font-weight:700;text-anchor:middle}
+.chg-list{margin:0;padding:0;list-style:none}
+.chg-list li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:start}
+.chg-list li:last-child{border-bottom:0}
+.chg-num{width:24px;height:24px;border-radius:50%;background:var(--amber);color:#0b0f14;font-family:var(--mono);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.chg-list .files{font-size:12px;color:var(--faint);margin-top:4px}
+.chg-list .files code{font-size:11px}
+.batch{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin:0 0 4px}
+@media (max-width:640px){.chg-list li{grid-template-columns:28px minmax(0,1fr)}.chg-list li .chip{grid-column:2}}
+</style>
+<header class="top">
+  <span class="mark">Macro · system map</span>
+  <nav><a href="#changes">Changes</a><a href="#map">Map</a><a href="#day">Daily clock</a><a href="#ai">AI touchpoints</a><a href="#week">Weekly loop</a><a href="#knobs">Tuning knobs</a><a href="#levers">Where to optimise</a></nav>
+</header>
+<div class="wrap">
+<section class="lede">
+  <h1>How the Macro Dashboard works</h1>
+  <p>A living map of the system: what runs, when, where AI is involved, and what each setting touches.
+  Every change to the system is added to the list below, and the parts it touches are numbered and outlined in amber on the map.
+  Last updated 27 Sept 2026.</p>
+</section>
+
+<h2 class="sec" id="changes">Changes, newest first</h2>
+<div class="card">
+  <p class="batch">27 Sept 2026 · after the weekend Refresh audit</p>
+  <ul class="chg-list" id="chg-list"></ul>
+</div>
+<h2 class="sec" id="map">The system in one picture</h2>
+<p class="muted" style="max-width:80ch">Think of it as three layers.
+A <span class="det">deterministic measurement layer</span> fetches numbers and scores them against rules.
+A <span class="ai">judgment layer</span> of AI runs writes prose and proposes the weekly call.
+A <span class="hum">human gate</span> on the Desk decides what becomes active.
+Everything meets in one Postgres database, and the web app only reads it, except for three kinds of button press.</p>
+
+<div class="sm-wrap"><svg class="sm" viewBox="0 0 1180 750" role="img" aria-label="System map of the Macro Dashboard">
+<defs><marker id="sm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8b98a4"/></marker></defs>
+<rect class="sm-band" x="10" y="8" width="1160" height="112" rx="12"/><text class="sm-bl" x="24" y="26">1 · OUTSIDE WORLD</text><rect class="sm-band" x="10" y="138" width="1160" height="322" rx="12"/><text class="sm-bl" x="24" y="156">2 · OPERATOR'S MAC · launchd + OpenClaw</text><rect class="sm-band" x="10" y="484" width="1160" height="122" rx="12"/><text class="sm-bl" x="24" y="502">3 · SUPABASE POSTGRES</text><rect class="sm-band" x="10" y="640" width="1160" height="100" rx="12"/><text class="sm-bl" x="24" y="658">4 · VERCEL</text><rect class="sm-col ai" x="30" y="166" width="340" height="282" rx="10"/><text class="sm-cl ai" x="44" y="184">FEEDS · GPT-5.6 via OpenClaw</text><rect class="sm-col det" x="392" y="166" width="346" height="282" rx="10"/><text class="sm-cl det" x="406" y="184">MEASURE · code only, no LLM</text><rect class="sm-col ai" x="760" y="166" width="390" height="282" rx="10"/><text class="sm-cl ai" x="774" y="184">JUDGE · Claude, through one queue</text><g class="sm-n ext"><rect x="40" y="34" width="320" height="74" rx="8"/><text class="sm-t" x="200.0" y="54">Open web</text><text class="sm-s" x="200.0" y="71">search · news · event calendars</text></g><g data-area="sources" class="sm-n ext"><rect x="400" y="34" width="330" height="74" rx="8"/><text class="sm-t" x="565.0" y="54">13 public data APIs</text><text class="sm-s" x="565.0" y="71">Yahoo · Treasury · TreasuryDirect · FRED</text><text class="sm-s" x="565.0" y="86">TradingView · CoinGecko · CFTC · ETF flows …</text></g><g class="sm-n ext"><rect x="800" y="34" width="300" height="74" rx="8"/><text class="sm-t" x="950.0" y="54">Open web</text><text class="sm-s" x="950.0" y="71">FedWatch · ISM · Coinglass · news</text></g><g data-area="feeds" class="sm-n ai"><rect x="50" y="196" width="300" height="52" rx="8"/><text class="sm-t" x="200.0" y="216">3 legacy jobs</text><text class="sm-s" x="200.0" y="233">08:45 · 09:15 · Mon 06:00  →  notes</text></g><g data-area="feeds" class="sm-n st"><path d="M130 270 a70.0 8 0 0 1 140 0 v34 a70.0 8 0 0 1 -140 0 z"/><path class="rim" d="M130 270 a70.0 8 0 0 0 140 0"/><text class="sm-t" x="200.0" y="289.0">Obsidian notes</text><text class="sm-s" x="200.0" y="305.0">vault, read by worker</text></g><g data-area="desk" class="sm-n ai"><rect x="50" y="326" width="300" height="52" rx="8"/><text class="sm-t" x="200.0" y="346">4 macro-desk jobs · SHADOW</text><text class="sm-s" x="200.0" y="363">08:40 · 09:05 · 09:20 · Mon 06:10</text></g><g data-area="desk" class="sm-n det"><rect x="50" y="392" width="300" height="44" rx="8"/><text class="sm-t" x="200.0" y="412">macro-agent desk</text><text class="sm-s" x="200.0" y="429">validator · login macro_desk</text></g><g data-area="worker" class="sm-n det"><rect x="410" y="250" width="310" height="86" rx="8"/><text class="sm-t" x="565.0" y="270">macro-worker</text><text class="sm-s" x="565.0" y="287">09:30 full run · 21:00 rescore</text><text class="sm-s" x="565.0" y="302">fetch → archive → score → drift</text></g><g data-area="runner" class="sm-n det"><rect x="800" y="196" width="300" height="50" rx="8"/><text class="sm-t" x="950.0" y="216">macro-runner tick</text><text class="sm-s" x="950.0" y="233">every 2 min · one run at a time</text></g><g data-area="claude" class="sm-n ai"><rect x="800" y="272" width="300" height="64" rx="8"/><text class="sm-t" x="950.0" y="292">Claude Code · Opus 5.5 pinned</text><text class="sm-s" x="950.0" y="309">narrative daily · author Monday</text><text class="sm-s" x="950.0" y="324">amend on Refresh</text></g><g data-area="cli" class="sm-n det"><rect x="800" y="368" width="300" height="56" rx="8"/><text class="sm-t" x="950.0" y="388">macro-agent CLI</text><text class="sm-s" x="950.0" y="405">validate · preflight R1–R12 · write</text></g><g data-area="accounting" class="sm-n st"><path d="M200 516 a75.0 8 0 0 1 150 0 v60 a75.0 8 0 0 1 -150 0 z"/><path class="rim" d="M200 516 a75.0 8 0 0 0 150 0"/><text class="sm-t" x="275.0" y="548.0">Accounting</text><text class="sm-s" x="275.0" y="564.0">positions (read-only)</text></g><g data-area="db" class="sm-n st"><path d="M400 516 a50.0 8 0 0 1 100 0 v60 a50.0 8 0 0 1 -100 0 z"/><path class="rim" d="M400 516 a50.0 8 0 0 0 100 0"/><text class="sm-t" x="450.0" y="548.0">macro_raw</text><text class="sm-s" x="450.0" y="564.0">raw archive</text></g><g data-area="mart" class="sm-n st"><path d="M508 516 a55.0 8 0 0 1 110 0 v60 a55.0 8 0 0 1 -110 0 z"/><path class="rim" d="M508 516 a55.0 8 0 0 0 110 0"/><text class="sm-t" x="563.0" y="548.0">macro_mart</text><text class="sm-s" x="563.0" y="564.0">scores · drift</text></g><g data-area="quality" class="sm-n st"><path d="M626 516 a52.0 8 0 0 1 104 0 v60 a52.0 8 0 0 1 -104 0 z"/><path class="rim" d="M626 516 a52.0 8 0 0 0 104 0"/><text class="sm-t" x="678.0" y="548.0">macro_quality</text><text class="sm-s" x="678.0" y="564.0">runs · findings</text></g><g data-area="core" class="sm-n st"><path d="M800 516 a150.0 8 0 0 1 300 0 v60 a150.0 8 0 0 1 -300 0 z"/><path class="rim" d="M800 516 a150.0 8 0 0 0 300 0"/><text class="sm-t" x="950.0" y="548.0">macro_core</text><text class="sm-s" x="950.0" y="564.0">observations · events · the call · run queue</text></g><g data-area="web" class="sm-n hum"><rect x="400" y="664" width="560" height="56" rx="8"/><text class="sm-t" x="680.0" y="684">Next.js web app</text><text class="sm-s" x="680.0" y="701">Desk · Data · Catalysts · History · Calibration</text></g><g data-area="you" class="sm-n hum"><circle cx="190" cy="692" r="26"/><text class="sm-t" x="190" y="697">You</text></g><path class="sm-e " d="M320 108 V194" marker-end="url(#sm-arr)"/><path class="sm-e " d="M200 248 V260" marker-end="url(#sm-arr)"/><text class="sm-l" x="214" y="258" text-anchor="start">writes</text><path class="sm-e " d="M270 287 H408" marker-end="url(#sm-arr)"/><text class="sm-l" x="340" y="280" text-anchor="middle">parsed at 09:30</text><path class="sm-e " d="M200 378 V390" marker-end="url(#sm-arr)"/><path class="sm-e " d="M640 108 V248" marker-end="url(#sm-arr)"/><path class="sm-e " d="M1100 71 H1135 V304 H1102" marker-end="url(#sm-arr)"/><text class="sm-l" x="1128" y="132" text-anchor="end">web search</text><path class="sm-e " d="M950 246 V270" marker-end="url(#sm-arr)"/><text class="sm-l" x="958" y="262" text-anchor="start">spawns</text><path class="sm-e " d="M950 336 V366" marker-end="url(#sm-arr)"/><path class="sm-e " d="M800 221 H748 V293 H722" marker-end="url(#sm-arr)"/><text class="sm-l" x="744" y="212" text-anchor="end">rescore after run</text><path class="sm-e" d="M565 336 V470 M450 470 H850"/><path class="sm-e " d="M450 470 V506" marker-end="url(#sm-arr)"/><path class="sm-e " d="M563 470 V506" marker-end="url(#sm-arr)"/><path class="sm-e " d="M678 470 V506" marker-end="url(#sm-arr)"/><path class="sm-e " d="M850 470 V506" marker-end="url(#sm-arr)"/><path class="sm-e " d="M950 424 V506" marker-end="url(#sm-arr)"/><text class="sm-l" x="958" y="462" text-anchor="start">prose · events · call as proposed</text><path class="sm-e dash" d="M275 508 V438" marker-end="url(#sm-arr)"/><text class="sm-l" x="282" y="476" text-anchor="start">read-only</text><path class="sm-e dash" d="M350 414 H375 V624 H1040 V586" marker-end="url(#sm-arr)"/><text class="sm-l" x="250" y="632" text-anchor="start">live after cutover</text><path class="sm-e " d="M1100 546 H1158 V221 H1102" marker-end="url(#sm-arr)"/><text class="sm-l" x="1150" y="601" text-anchor="end">queue + decisions</text><path class="sm-e " d="M563 586 V662" marker-end="url(#sm-arr)"/><path class="sm-e " d="M678 586 V662" marker-end="url(#sm-arr)"/><path class="sm-e " d="M218 692 H398" marker-end="url(#sm-arr)"/><path class="sm-e " d="M960 692 H1000 V588" marker-end="url(#sm-arr)"/><text class="sm-l" x="1008" y="660" text-anchor="start">Refresh · Accept · Reject</text>
+</svg></div>
+<div class="legend"><span class="l-det">deterministic code</span><span class="l-ai">LLM</span><span class="l-hum">human / UI</span><span class="l-st">storage</span></div>
+
+<div class="layers" style="margin-top:18px">
+  <div class="card l1"><div class="k">Layer 1 · measure</div><h3>Worker</h3>
+    <p class="muted" style="font-size:13px">Pure Python with no LLM. It pulls 65 series from 13 APIs, stores every raw response, and upserts observations. It scores the active call's conditions, trigger clauses, target bands and setups, computes drift, then rewrites the mart in one transaction.</p>
+    <p style="font-size:12px" class="faint"><code>worker/src/macro/main.py</code>, <code>evaluate.py</code>, <code>drift.py</code></p></div>
+  <div class="card l2"><div class="k">Layer 2 · judge</div><h3>AI runs</h3>
+    <p class="muted" style="font-size:13px">Claude fills the 11 series no API serves (FedWatch, ISM, liquidations, State Street, and the Fed, tariff and geopolitics prose) and logs events. Each week it writes the call and grades last week's. GPT (OpenClaw) writes catalysts, tail risks and the holdings watch. Every AI write goes through a validator.</p>
+    <p style="font-size:12px" class="faint"><code>agent/SKILL.md</code>, <code>runner.py</code>, <code>openclaw/</code></p></div>
+  <div class="card l3"><div class="k">Layer 3 · decide</div><h3>You, on the Desk</h3>
+    <p class="muted" style="font-size:13px">No AI-written call goes live by itself. The Desk shows the proposal. Accept or Reject is recorded in <code>run_request</code>, and the runner applies it on the next tick. Refresh asks for an amendment. The web app never activates anything itself.</p>
+    <p style="font-size:12px" class="faint"><code>web/lib/data.ts</code>, <code>macro_mart.decide_proposal</code></p></div>
+</div>
+
+<h2 class="sec" id="day">The daily clock (SGT)</h2>
+<div class="grid2">
+<div class="card">
+<ul class="day">
+  <li><span class="t">Mon 06:00</span><span class="dot ai"></span><span class="w">Legacy black-swan job <small>GPT writes <code>Blackswan Events.md</code></small></span></li>
+  <li><span class="t">Mon 06:10</span><span class="dot ai"></span><span class="w">desk-tail-risks-weekly <small>shadow: validated, not written</small></span></li>
+  <li><span class="t">08:40</span><span class="dot ai"></span><span class="w">desk-catalysts <small>shadow</small></span></li>
+  <li><span class="t">08:45</span><span class="dot ai"></span><span class="w">Legacy catalyst monitor → vault note</span></li>
+  <li><span class="t">09:05</span><span class="dot ai"></span><span class="w">desk-holdings <small>shadow; prices come from code, the model writes only the reasons</small></span></li>
+  <li><span class="t">09:15</span><span class="dot ai"></span><span class="w">Legacy holdings watch → vault note</span></li>
+  <li><span class="t">09:20</span><span class="dot ai"></span><span class="w">desk-tail-risks-daily <small>shadow</small></span></li>
+  <li><span class="t">09:30</span><span class="dot det"></span><span class="w"><b>Worker full run</b>, about 3 min <small>fetch all sources, parse the vault notes, archive past catalysts, evaluate, rewrite mart. Monday: grade setups</small></span></li>
+  <li><span class="t">09:40+ wkdy</span><span class="dot ai"></span><span class="w"><b>Narrative</b>, 7 to 9 min <small>4 parallel search agents, retry pass, validated write, then a rescore. Waits for the 09:30 run to land</small></span></li>
+  <li><span class="t">Mon 10:00+</span><span class="dot ai"></span><span class="w"><b>Author</b> <small>blind phase read → reveal → grade last week → propose W+1 → stop. Tuesday is the fallback</small></span></li>
+  <li><span class="t">any time</span><span class="dot hum"></span><span class="w"><b>Refresh / Accept / Reject</b> <small>the next 2-min tick claims it; an amend takes about 6 min</small></span></li>
+  <li><span class="t">21:00</span><span class="dot det"></span><span class="w"><b>Worker rescore</b> <small>30 min after the 08:30 ET US data releases (during US daylight time)</small></span></li>
+  <li><span class="t">every 2 min</span><span class="dot det"></span><span class="w">Runner tick <small>does at most one thing: apply a decision or run one queued request, never two Claude runs at once</small></span></li>
+</ul>
+</div>
+<div class="card">
+  <div class="k">Cadence facts that bite</div>
+  <ul class="tight" style="font-size:13px">
+    <li><b>Everything runs on one Mac.</b> Sleep is fine: launchd runs a missed calendar job on wake. A power-off is not: the job is skipped, as on 27 Sept 2026. You re-run a missed morning by hand.</li>
+    <li>OpenClaw <b>does</b> catch up missed jobs; launchd does not. So after a shutdown the feeds and the worker fall out of order.</li>
+    <li>The worker runs every day, weekends included. The Saturday 09:30 run already carries Friday's US close.</li>
+    <li>Narrative and author runs skip weekends. So Monday's author reads Friday's prose plus Monday's narrative.</li>
+    <li>Failed scheduled runs retry once after 15 min, then stop and leave a finding. There is no loop.</li>
+    <li>Run caps: a run is killed at 50 min, and a claim is declared dead after 70 min.</li>
+    <li>The web app re-polls data every 11.5 h, and every 20 s while a run is in flight. It flags data stale when a scheduled run is more than 45 min late.</li>
+  </ul>
+  <div class="k" style="margin-top:14px">Two feed paths, both live today</div>
+  <p style="font-size:13px" class="muted">During the shadow trial, catalysts, holdings and tail risks reach the database through the <b>legacy</b> path: GPT → vault note → the worker's parser. The new <b>desk</b> path (GPT → typed tool → validator → <code>macro_desk</code> login) runs in parallel as a dry run. You pay for both until cutover.</p>
+</div>
+</div>
+
+<h2 class="sec" id="ai">Where the AI is injected</h2>
+<div class="grid2">
+  <div class="card aicard"><h3><span class="chip c-vio">CLAUDE</span> Narrative, daily</h3>
+    <dl>
+      <dt>Trigger</dt><dd>Runner, weekdays after the 09:30 run lands</dd>
+      <dt>Reads</dt><dd>Latest reading of each owned series; catalysts, tail risks and watchlist already pasted into its prompts</dd>
+      <dt>Writes</dt><dd>The 11 <code>fetch_path: agent_0930</code> series, events, gaps, findings</dd>
+      <dt>Guards</dt><dd>Unknown keys dropped; tier cannot beat the series floor; Tier 4 must be blank; a retry only wins at a strictly better tier; a plain-words rewrite that loses a number is refused; raw returns archived</dd>
+      <dt>Human gate</dt><dd class="warn">None. Goes live after the rescore</dd>
+      <dt>Tune</dt><dd><code>agent/src/macro_agent/prompts.py</code>, <code>config/voice.md</code></dd>
+    </dl></div>
+  <div class="card aicard"><h3><span class="chip c-vio">CLAUDE</span> Author, Monday</h3>
+    <dl>
+      <dt>Trigger</dt><dd>Runner, Monday after 10:00 once the narrative is done (Tuesday fallback)</dd>
+      <dt>Reads</dt><dd>A blind phase context first, with the prior call withheld; then the full context (the reveal)</dd>
+      <dt>Writes</dt><dd>Phase reads, scenario set, trigger clauses, targets, setups, strategies, all as <code>proposed</code>; last week's grade, with the Brier score computed by code</dd>
+      <dt>Guards</dt><dd>Reveal order enforced; validator (sums to 100, every expression run through the worker's evaluator, <b>every trigger typed and the risk-off confirming leg typed</b>); preflight R1–R12; waivers recorded as findings</dd>
+      <dt>Human gate</dt><dd class="ok">Accept or Reject on the Desk</dd>
+      <dt>Tune</dt><dd><code>agent/SKILL.md</code>, <code>runner.py</code> prompt text, <code>preflight.py</code></dd>
+    </dl></div>
+  <div class="card aicard"><h3><span class="chip c-vio">CLAUDE</span> Amend, on Refresh</h3>
+    <dl>
+      <dt>Trigger</dt><dd>You press Refresh (or insert an <code>amend</code> row)</dd>
+      <dt>Reads</dt><dd>The amendment context plus <code>macro_mart.drift</code> and your reason text</dd>
+      <dt>Writes</dt><dd>Amended scenario set, strategies or setups as <code>proposed</code>, or a <code>NO_CHANGE</code> line</dd>
+      <dt>Guards</dt><dd>Re-price only on a "material" change (a trigger fires in full, a phase condition flips, a tail risk turns acute, or a premise moves); never a phase call</dd>
+      <dt>Human gate</dt><dd class="ok">Accept or Reject</dd>
+      <dt>Weak spot</dt><dd class="warn">An amendment inherits the accepted clauses; for a migrated week that are all manual (W39), the model still decides what counts as material</dd>
+    </dl></div>
+  <div class="card aicard"><h3><span class="chip c-vio">GPT-5.6</span> OpenClaw feeds</h3>
+    <dl>
+      <dt>Trigger</dt><dd>OpenClaw cron, 3 legacy and 4 desk jobs</dd>
+      <dt>Reads</dt><dd>Web search and fetch; for desk jobs, desk tools that serve the current lists, positions from Accounting, and prices computed in code</dd>
+      <dt>Writes</dt><dd>Legacy: Obsidian notes the worker parses. Desk: catalysts, tail risks and holding watch rows, currently dry-run only</dd>
+      <dt>Guards</dt><dd>Locked agent (no shell, empty read-only workspace); the plugin passes input as an argv array and JSON; <code>desk_validate.py</code>; least-privilege DB role limited to its own rows; timeouts</dd>
+      <dt>Human gate</dt><dd class="warn">None per item. The cutover itself is your call</dd>
+      <dt>Tune</dt><dd><code>openclaw/prompts/*.md</code>, <code>desk-rules.md</code>, then <code>openclaw/install.sh jobs</code></dd>
+    </dl></div>
+</div>
+
+<h2 class="sec" id="week">The weekly loop</h2>
+<pre class="mermaid">
+sequenceDiagram
+  participant W as Worker (code)
+  participant R as Runner
+  participant C as Claude
+  participant DB as Supabase
+  participant O as You, on the Desk
+  Note over W,O: Every day
+  W->>DB: 09:30 fetch, parse, score the active call, compute drift
+  R->>C: weekdays 09:40, narrative
+  C->>DB: prose series + events (validated, live)
+  R->>W: rescore
+  Note over W,O: Monday
+  R->>C: 10:00, author
+  C->>DB: blind phase read, reveal, grade last week
+  C->>DB: next week's call written as proposed
+  O->>DB: Accept or Reject
+  R->>DB: next tick activates, retires old rows, rescores
+  Note over W,O: Mid-week, when drift is 6+ or a change is material
+  O->>DB: Refresh
+  R->>C: amend
+  C->>DB: amendment as proposed, or NO_CHANGE
+  O->>DB: Accept or Reject
+  Note over W,O: The next Monday grades the week just closed (Brier score, rule weeks)
+</pre>
+
+<h2 class="sec" id="knobs">Tuning knobs and what each one touches</h2>
+<div class="tblwrap"><table class="tbl">
+  <tr><th>Knob</th><th>Where</th><th>Blast radius</th><th>How to test before it hits the Desk</th></tr>
+  <tr><td>Add, remove or re-source a series</td><td><code>config/series.yaml</code> (the <code>fetch_path</code> field moves it between code and AI)</td><td>Every condition, band and setup naming the series; values are stored in canonical units, so a unit change breaks authored thresholds silently</td><td><code>uv run --project worker pytest</code>, then <code>--rescore</code>, then the fixture server on :3111</td></tr>
+  <tr><td>Scoring rules</td><td><code>worker/src/macro/expr.py</code>, <code>predicates.py</code> (docs in <code>config/predicates.md</code>)</td><td>All active and historical scoring</td><td>Golden tests in <code>worker/tests/test_expr.py</code></td></tr>
+  <tr><td>Drift weights, refresh threshold</td><td><code>worker/src/macro/drift.py:74-81</code></td><td>When the Desk nags you to Refresh</td><td>Rescore and read <code>macro_mart.drift</code></td></tr>
+  <tr><td>Stale-read and near-breach limits, premise horizon</td><td><code>evaluate.py:59, 409</code>, <code>premise.py:38</code></td><td>"Closest to changing" and the phase-staleness warnings</td><td>Rescore</td></tr>
+  <tr><td>Narrative prompts and voice</td><td><code>agent/src/macro_agent/prompts.py</code>, <code>config/voice.md</code>, <code>config/jargon.yaml</code></td><td>Tomorrow's prose rows and events</td><td><code>macro-agent narrative context</code> prints the rendered prompts</td></tr>
+  <tr><td>How the call is written</td><td><code>agent/SKILL.md</code>, <code>runner.py:286-331</code>, <code>preflight.py</code>, <code>validate.py</code></td><td>Next Monday's call and every Refresh</td><td><code>macro-agent preflight --in &lt;file&gt; --text</code> offline</td></tr>
+  <tr><td>Schedules</td><td>Worker: plist via <code>worker/deploy/install.sh</code>. Runner: <code>runner.py:57-74</code>. Desk: <code>openclaw/install.sh</code> JOBS</td><td>Ordering: feeds must land before 09:30, and the narrative waits for the worker. The web's 45-min lateness check assumes 09:30 and 21:00</td><td>Move them together, never one alone</td></tr>
+  <tr><td>Models</td><td>Claude: <code>claude-opus-5-5</code>, pinned in <code>runner.DEFAULT_MODEL</code>, override <code>MACRO_CLAUDE_MODEL</code>. GPT: <code>openclaw/install.sh:47-48</code></td><td>The voice and judgment of every AI write</td><td>Run one amend by hand on the fixture DB</td></tr>
+  <tr><td>Feed cutover</td><td><code>DESK_MODE=live</code> plus <code>MACRO_FEED_SOURCE_*=desk</code> in <code>.env</code></td><td>What the Catalysts page and the narrative context contain</td><td><code>macro-agent desk compare --since 2026-09-25</code></td></tr>
+</table></div>
+
+<h2 class="sec" id="levers">Where to optimise, ranked by leverage</h2>
+<div class="card">
+  <div class="lever"><span class="num">1</span><div><b>Type the conditions.</b> <span class="chip c-ok">ENFORCED FOR NEW WEEKS</span> <span class="muted">W39, migrated from the journal, has 0 of 9 clauses typed, so the whole daily scoring layer produces nothing for the call itself, and drift and Refresh fall back on the model's reading. Typed clauses turn "did S2 fire?" into a fact the Desk shows at 09:30, before any AI runs. This is the biggest quality lever in the system, and it costs nothing at runtime.</span></div></div>
+  <div class="lever"><span class="num">2</span><div><b>Make the schedule survive a closed laptop.</b> <span class="chip c-mut">DECLINED 27 SEPT: re-run by hand</span> <span class="muted">All four clocks (launchd, runner, OpenClaw, Vercel's polling) assume one Mac is awake. Options, from cheapest: a catch-up rule in the runner tick, a <code>pmset</code> wake at 08:35, or moving the worker to a cloud cron. The worker has no LLM dependency, so it could move on its own.</span></div></div>
+  <div class="lever"><span class="num">3</span><div><b>Shrink the AI-sourced number set.</b> <span class="muted">11 series still come from web search, and liquidations has been a permanent gap. Each one moved to a fetcher (FedWatch, ISM, Coinglass, State Street, per <code>docs/FUTURE.md</code>) removes a daily AI dependency and a Tier 2 ceiling.</span></div></div>
+  <div class="lever"><span class="num">4</span><div><b>Finish the OpenClaw cutover.</b> <span class="muted">Seven GPT jobs run where four will do, and the legacy path adds an extra hop through a vault parser. The trial's compare window opens around 28–30 Sept.</span></div></div>
+  <div class="lever"><span class="num">5</span><div><b>Make AI runs auditable.</b> <span class="chip c-ok">DONE 27 SEPT</span> <span class="muted">Model pinned, first commit made, and each run stores its session id and the repo paths it changed on <code>run_request</code>, with a <code>run_changed_repo</code> finding when it touched anything.</span></div></div>
+</div>
+
+</div>
+<script>
+/* The one list to edit when the system changes. `areas` are data-area ids on the map:
+   sources feeds desk worker runner claude cli accounting db mart quality core web you */
+const CHANGES = [
+  {n:1, title:"A new week's trigger must be typed", status:"shipped", areas:["cli"],
+   what:"author propose refuses a scenario whose trigger is all manual, and a risk-off branch whose confirming leg (VIX, MOVE, HY, IG or breadth) is not typed. Amendments are exempt.",
+   files:["agent/src/macro_agent/validate.py","agent/SKILL.md"]},
+  {n:2, title:"Claude model pinned to Opus 5.5", status:"shipped", areas:["claude","runner"],
+   what:"Every narrative, author and amend run passes --model claude-opus-5-5; MACRO_CLAUDE_MODEL in .env overrides it.",
+   files:["agent/src/macro_agent/runner.py"]},
+  {n:3, title:"Each Claude run leaves a trail", status:"shipped", areas:["runner","core","quality","web"],
+   what:"The runner names the session, stores its id and git status before and after on run_request, and opens a run_changed_repo finding when a run edited repository files.",
+   files:["agent/src/macro_agent/runner.py","supabase/migrations/20260927000100_run_request_audit.sql","web/lib/freshness.ts"]},
+  {n:4, title:"First commit of the repository", status:"shipped", areas:[],
+   what:"The repo had no commits; now every later change, including one a run makes, has a base to diff against.",
+   files:["(whole repository)"]},
+];
+(function(){
+  const list=document.getElementById('chg-list');
+  const chip={shipped:'<span class="chip c-ok">SHIPPED</span>',progress:'<span class="chip c-amb">IN PROGRESS</span>',planned:'<span class="chip c-mut">PLANNED</span>'};
+  for(const c of CHANGES){
+    const li=document.createElement('li');
+    li.innerHTML='<span class="chg-num">'+c.n+'</span><div><b>'+c.title+'</b><div class="muted" style="font-size:13px">'+c.what+'</div><div class="files">'+c.files.map(f=>'<code>'+f+'</code>').join(' · ')+'</div></div>'+(chip[c.status]||'');
+    list.appendChild(li);
+  }
+  const svg=document.querySelector('svg.sm'); if(!svg) return;
+  const ns='http://www.w3.org/2000/svg', count={};
+  for(const c of CHANGES.filter(c=>c.status!=='done-old')){
+    for(const a of c.areas){
+      const g=svg.querySelector('[data-area="'+a+'"]'); if(!g) continue;
+      g.classList.add('hl');
+      const b=g.getBBox(), k=(count[a]=(count[a]||0)+1);
+      const badge=document.createElementNS(ns,'g'); badge.setAttribute('class','sm-badge');
+      const cx=b.x+b.width-6-(k-1)*22, cy=b.y+2;
+      badge.innerHTML='<circle cx="'+cx+'" cy="'+cy+'" r="10"></circle><text x="'+cx+'" y="'+(cy+4)+'">'+c.n+'</text>';
+      svg.appendChild(badge);
+    }
+  }
+})();
+</script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs";
+
+  // Render Mermaid in a theme that matches the artifact page, and re-render when
+  // the viewer flips the page theme - Mermaid never restyles an already-rendered
+  // SVG on its own, so a fixed theme clashes in either light or dark mode.
+  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+  // Normalize any CSS color the browser produces (rgb, oklch, hsl, named, ...)
+  // to [r, g, b, a] bytes via a 1x1 canvas, so parsing never breaks on modern
+  // color syntaxes like DaisyUI's oklch() values.
+  const paint = document.createElement("canvas").getContext("2d");
+  function toRgba(color) {
+    paint.clearRect(0, 0, 1, 1);
+    paint.fillStyle = "#000";
+    paint.fillStyle = color;
+    paint.fillRect(0, 0, 1, 1);
+    return paint.getImageData(0, 0, 1, 1).data;
+  }
+
+  function compositeRgba(foreground, background) {
+    const foregroundAlpha = foreground[3] / 255;
+    const backgroundAlpha = background[3] / 255;
+    const alpha = foregroundAlpha + backgroundAlpha * (1 - foregroundAlpha);
+    if (alpha === 0) return [0, 0, 0, 0];
+    return [
+      (foreground[0] * foregroundAlpha + background[0] * backgroundAlpha * (1 - foregroundAlpha)) / alpha,
+      (foreground[1] * foregroundAlpha + background[1] * backgroundAlpha * (1 - foregroundAlpha)) / alpha,
+      (foreground[2] * foregroundAlpha + background[2] * backgroundAlpha * (1 - foregroundAlpha)) / alpha,
+      alpha * 255,
+    ];
+  }
+
+  function pageIsDark() {
+    // Trust the actually-rendered page background so this works with any theming
+    // mechanism: prefers-color-scheme, a data-theme attribute, or plain CSS.
+    const root = document.documentElement;
+    const rootBackground = toRgba(getComputedStyle(root).backgroundColor);
+    const bodyBackground = document.body ? toRgba(getComputedStyle(document.body).backgroundColor) : [0, 0, 0, 0];
+    const [r, g, b, a] = compositeRgba(bodyBackground, rootBackground);
+    if (a > 0) {
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 < 0.5;
+    }
+    const colorScheme = getComputedStyle(root).colorScheme;
+    if (colorScheme.includes("dark") && !colorScheme.includes("light")) return true;
+    if (colorScheme.includes("light") && !colorScheme.includes("dark")) return false;
+    return darkQuery.matches;
+  }
+
+  const diagrams = [...document.querySelectorAll(".mermaid")].map((el) => ({ el, src: el.textContent }));
+  let applied;
+  let rendering = false;
+  let queued = false;
+  function queueRender() {
+    queued = true;
+    if (rendering) return;
+    void render();
+  }
+  async function render() {
+    rendering = true;
+    try {
+      while (queued) {
+        queued = false;
+        const theme = pageIsDark() ? "dark" : "default";
+        if (theme === applied) continue;
+        mermaid.initialize({ startOnLoad: false, theme, securityLevel: "strict" });
+        for (const { el, src } of diagrams) {
+          el.removeAttribute("data-processed");
+          el.textContent = src;
+        }
+        try {
+          await mermaid.run({ nodes: diagrams.map((d) => d.el) });
+        } catch (error) {
+          console.error("Mermaid diagram render failed:", error);
+          return;
+        }
+        applied = theme;
+      }
+    } finally {
+      rendering = false;
+      if (queued) queueRender();
+    }
+  }
+
+  // First render once stylesheets are applied (no wrong-theme flash), then keep
+  // the diagrams in sync with page-theme toggles and OS light/dark changes.
+  if (document.readyState === "complete") queueRender();
+  else window.addEventListener("load", queueRender, { once: true });
+  const themeObserver = new MutationObserver(queueRender);
+  for (const el of [document.documentElement, document.body]) {
+    if (!el) continue;
+    themeObserver.observe(el, {
+      attributes: true,
+      attributeFilter: ["data-theme", "class", "style"],
+    });
+  }
+  document.addEventListener("change", queueRender, true);
+  document.addEventListener(
+    "transitionend",
+    ({ propertyName }) => {
+      if (propertyName === "background-color") queueRender();
+    },
+    true,
+  );
+  darkQuery.addEventListener("change", queueRender);
+</script>
+</body>
+</html>

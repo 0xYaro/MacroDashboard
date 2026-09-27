@@ -1,0 +1,4906 @@
+/* Design tokens and chrome. Semantic colour is defined once, here, and nowhere
+   else. No CSS framework: this file is the whole system.
+
+   The `:root` block, the chip vocabulary, the panel chrome, the ledger strip
+   and the table rules are ported from Accounting's `web/app/globals.css`, which
+   ports them from GreenfieldDash's `packages/ui/tokens.css`, so the three
+   terminals read as one house. Token values are verbatim: a page that renders
+   #64bd8b instead of #63bc8a is a different product wearing the same name.
+   Nothing is imported across the repository boundary, by decision.
+
+   Two token groups are added below the ported ones, because this system makes
+   two claims Accounting never has to: whether a stated condition currently
+   holds, and where a live value sits inside a forecast band. */
+
+:root {
+  --bg: #0b0f14;
+  --surface-1: #12171d;
+  --surface-2: #181f26;
+  --surface: var(--surface-1);
+  --surface-raised: var(--surface-2);
+  --line: #222a32;
+  --line-strong: #36414c;
+  --ink: #e7ecf0;
+  --muted: #94a1ad;
+  --faint: #7d8a96;
+
+  /* market semantics: never hardcode these in a component */
+  --up: #63bc8a;
+  --down: #e0736b;
+  --flat: #8b98a4;
+
+  /* urgency */
+  --urgency-3: #e0736b;
+  --urgency-2: #d2a63f;
+  --urgency-1: #8b98a4;
+
+  /* freshness states. Red means a venue that should be reporting is not; age
+     uses the calmer dated token so a stale number stays readable. */
+  --state-fresh: var(--up);
+  --state-stale: var(--urgency-2);
+  --state-dated: #98a2ac;
+  --state-pending: #7b8794;
+  --state-empty: #b39a67;
+  --state-not-connected: #9b8a6a;
+  --state-failed: var(--urgency-3);
+  --state-unrated: #a28bc4;
+
+  --accent: #d8c79b;
+
+  /* The eight kinds of catalyst on the Catalysts page. Four borrow a hue the
+     page already speaks; four are new, picked to stay apart from those and
+     from the market and state colours. */
+  --kind-macro: #6ea8e6;
+  --kind-central-banks: var(--state-unrated);
+  --kind-earnings: #5cb8b2;
+  --kind-market-events: var(--state-dated);
+  --kind-tech: #e08fb4;
+  --kind-policy: #e0876b;
+  --kind-investor: var(--accent);
+  --kind-crypto: #e3b341;
+  --kind-other: var(--faint);
+
+  /* `--font-plex-mono` is the self-hosted family `app/layout.tsx` loads. The
+     literal name stays behind it so a stylesheet-only render, a test in jsdom or
+     a font that failed to load still lands on Plex if the system has it. */
+  --mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular,
+    Menlo, monospace;
+  --sans: var(--font-plex-sans), "IBM Plex Sans", ui-sans-serif, -apple-system,
+    "Segoe UI", system-ui, sans-serif;
+
+  /* Terminal density. Defined here rather than per component so one notch
+     tighter lands on every data table at once. */
+  --font-data: 13px;
+  --row-line: 1.2;
+  --row-pad-y: 1px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  /* Dark only. There is one operator and one terminal; a light mode would be a
+     second set of contrast decisions nobody would ever look at. */
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:where(p, h1, h2, h3, h4, span) {
+  overflow-wrap: anywhere;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  line-height: 1.25;
+}
+
+/* Digits must not jitter on a tick: tabular figures everywhere a number lives. */
+.font-num,
+.numeric,
+kbd,
+code {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.faint {
+  color: var(--faint);
+}
+
+.small {
+  font-size: 12px;
+}
+
+.error {
+  color: var(--urgency-3);
+  font-size: 12px;
+}
+
+.up {
+  color: var(--up);
+}
+
+.down {
+  color: var(--down);
+}
+
+.flat {
+  color: var(--flat);
+}
+
+kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #16130b;
+  font-size: 12px;
+  font-weight: 700;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* One focus ring, defined once, for everything reachable by keyboard.
+
+   `:focus-visible` rather than `:focus`, so a mouse click does not leave a ring
+   behind, and the accent rather than the browser default, because the default
+   is a thin dark-blue line that is close to invisible on #0b0f14. A control a
+   keyboard user cannot locate is a control they do not have. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Inside a table or a tab strip the offset ring would be clipped by the
+   neighbouring cell, so those draw it inside their own box instead. */
+.panel-view-tab:focus-visible,
+.snapshot-group-toggle:focus-visible {
+  outline-offset: -2px;
+}
+
+/* ----------------------------------------------------------------- chips -- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.chip.k {
+  border-color: rgba(216, 199, 155, 0.34);
+  background: rgba(216, 199, 155, 0.07);
+  color: var(--accent);
+}
+
+.state-fresh {
+  border-color: rgba(99, 188, 138, 0.38);
+  background: rgba(99, 188, 138, 0.09);
+  color: var(--state-fresh);
+}
+
+.state-stale {
+  border-color: rgba(210, 166, 63, 0.38);
+  background: rgba(210, 166, 63, 0.09);
+  color: var(--state-stale);
+}
+
+.state-dated {
+  border-color: rgba(152, 162, 172, 0.3);
+  background: rgba(152, 162, 172, 0.07);
+  color: var(--state-dated);
+}
+
+.state-pending {
+  border-color: rgba(123, 135, 148, 0.42);
+  border-style: dashed;
+  background: transparent;
+  color: var(--state-pending);
+}
+
+.state-empty {
+  border-color: rgba(179, 154, 103, 0.42);
+  background: rgba(179, 154, 103, 0.08);
+  color: var(--state-empty);
+}
+
+.state-not-connected {
+  border-color: rgba(155, 138, 106, 0.42);
+  background: rgba(155, 138, 106, 0.08);
+  color: var(--state-not-connected);
+}
+
+.state-failed {
+  border-color: rgba(224, 115, 107, 0.42);
+  background: rgba(224, 115, 107, 0.1);
+  color: var(--state-failed);
+}
+
+.state-unrated {
+  border-color: rgba(162, 139, 196, 0.42);
+  background: rgba(162, 139, 196, 0.09);
+  color: var(--state-unrated);
+}
+
+/* ------------------------------------------------------------------ shell -- */
+
+.shell {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.shell-head {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  /* The bar spans the window; its contents line up with the reading below,
+     which stops at 1,640px and centres. */
+  padding: 12px max(20px, calc((100% - 1640px) / 2 + 20px));
+  border-bottom: 1px solid var(--line);
+  background: rgba(13, 17, 21, 0.96);
+  backdrop-filter: blur(6px);
+}
+
+.shell-mark {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.shell-nav {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.shell-nav a {
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shell-nav a:hover {
+  color: var(--ink);
+}
+
+.shell-nav a[aria-current="page"] {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.shell-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* One ceiling for the whole reading, rather than one per table. At 2,000px the
+   tables each stopped at their own cap while the cards around them ran to the
+   edge, so every section ended at a different x. Past 1,640 nothing here gains
+   information from width, only distance between a figure and its label. */
+.shell-main {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 1640px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.button-plain {
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.button-plain:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.button-plain[aria-pressed="true"] {
+  border-color: rgba(216, 199, 155, 0.4);
+  background: rgba(216, 199, 155, 0.07);
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- panels -- */
+
+.panel {
+  min-width: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.panel + .panel {
+  margin-top: 14px;
+}
+
+/* A panel with nothing to show must not reserve the space a table would take:
+   a reserved block of black reads as an empty table, which is a different and
+   wrong claim from "the worker has not written yet". */
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(21, 26, 32, 0.7);
+}
+
+.panel-head-num {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.panel-head h2 {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* When this reading was last recomputed. Beside the title, because "when was
+   this last updated" is the first question a page that changes twice a day has
+   to answer and it should not need a scroll. */
+.panel-head-when {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-head-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.panel-views {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 0 15px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(21, 26, 32, 0.4);
+}
+
+.panel-view-tab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 8px 12px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.panel-view-tab:hover {
+  color: var(--ink);
+}
+
+.panel-view-tab[aria-selected="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.panel-body {
+  min-width: 0;
+  padding: 15px;
+}
+
+/* Dim stale data and keep it readable. Never a spinner over a value we hold. */
+.panel.stale .panel-body {
+  opacity: 0.62;
+}
+
+.panel-banner {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 13px;
+  padding: 10px 13px;
+  border: 1px solid rgba(210, 166, 63, 0.3);
+  border-radius: 10px;
+  background: rgba(210, 166, 63, 0.05);
+  color: var(--state-stale);
+  font-size: 12px;
+}
+
+/* Red is for a genuine fault: a venue that was called and did not answer. An
+   age, or a total held back because of one, stays amber. */
+.panel-banner.fail {
+  border-color: rgba(224, 115, 107, 0.32);
+  background: rgba(224, 115, 107, 0.05);
+  color: var(--state-failed);
+}
+
+.panel-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.panel-empty-mark {
+  color: var(--state-not-connected);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+}
+
+.panel-empty h3 {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.panel-empty p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.panel-empty-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 2px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.panel-empty-facts dt {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel-empty-facts dd {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------- the ledger strip -- */
+
+.ledger {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ledger-cell {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 11px 13px;
+}
+
+.ledger-cell > span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ledger-cell > strong {
+  display: block;
+  margin-top: 9px;
+  font-family: var(--mono);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  line-height: 1;
+  /* The blank a withheld figure leaves takes the same height as a figure, so
+     the strip does not reflow the moment a venue goes quiet. */
+  min-height: 22px;
+}
+
+.ledger-cell > small {
+  display: block;
+  margin-top: 6px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+/* A withheld reading prints its dash in the faint token at the smaller size the
+   mock uses, so it cannot be misread as a figure of zero. */
+.ledger-cell > strong.withheld {
+  color: var(--faint);
+  font-size: 18px;
+}
+
+.ledger-cell > small.withheld {
+  color: var(--state-stale);
+}
+
+/* ------------------------------------------------------------------ tables -- */
+
+.tbl {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.tbl table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.tbl th {
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tbl td {
+  padding: 9px 13px;
+  border-bottom: 1px solid rgba(37, 45, 53, 0.7);
+  vertical-align: top;
+}
+
+.tbl tr:last-child td {
+  border-bottom: none;
+}
+
+.tbl td.num,
+.tbl th.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tbl td small {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+/* A data table takes the width its columns need and no more.
+
+   Stretching one to a 1,920px window does not add information, it adds distance:
+   the instrument and its venue end up a hand's width apart and the eye has to
+   travel it on every row. Two ceilings rather than one, because the two tables
+   carry different numbers of columns. */
+.tbl-narrow {
+  max-width: none;
+}
+
+/* Retired as a ceiling: `.shell-main` caps the whole reading at 1,640px, and
+   a table stopping at 1,200 under cards that run to the edge was the ragged
+   edge an audit on 2026-09-23 found on every page. */
+.tbl-bounded {
+  max-width: none;
+}
+
+/* The two judgment tables fill their section. They were capped at 1,480px,
+   which at 2,000 ended them short of the cards around them; the page's own
+   ceiling on `.shell-main` now does that job once, and both tables use a fixed
+   layout that gives spare width to the prose column rather than spreading the
+   figures apart. */
+.tbl-wide {
+  max-width: none;
+}
+
+.tbl-note {
+  margin: 0;
+  padding: 9px 13px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.tbl-note b {
+  color: var(--state-stale);
+}
+
+/* A reading whose source has stopped answering. Dimmed, never hidden and never
+   blanked: the last observation we were given is still the best one there is.
+   It just is not current for this series' cadence, and a figure from a silent
+   source sitting at the same brightness as one from a live source is the whole
+   terminal quietly claiming to be current. The exact as-of is in the column
+   beside it and the next expected date is in the one after that.
+
+   Only a fault dims. A `due` row is the current reading of a weekly series and
+   dimming it would say the opposite. */
+.tbl td.cell-stale {
+  opacity: 0.5;
+}
+
+/* --------------------------------------------------- provenance, per venue -- */
+
+.provenance {
+  border-top: 1px solid var(--line);
+  background: rgba(21, 26, 32, 0.4);
+}
+
+.provenance-venue {
+  display: flex;
+  gap: 6px 14px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 9px 15px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Closed by default. Two runs a day against eleven sources is twenty-two rows,
+   and on the days nothing went wrong every one of them says so. */
+.provenance-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  width: 100%;
+  padding: 9px 15px;
+  border: 0;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.provenance-more {
+  margin-left: auto;
+}
+
+.provenance-summary + .provenance-venue {
+  border-top: 1px solid var(--line);
+}
+
+.provenance-venue + .provenance-venue {
+  border-top: 1px solid var(--line);
+}
+
+.provenance-venue b {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.provenance-name {
+  color: var(--ink);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.provenance-excluded {
+  color: var(--state-stale);
+}
+
+.provenance-reason {
+  flex-basis: 100%;
+  color: var(--state-stale);
+}
+
+.provenance-note {
+  flex-basis: 100%;
+  color: var(--faint);
+}
+
+/* ------------------------------------------------------ open findings ---- */
+
+/* Limit breaches and reconciliation breaks, one line each. The sentence is
+   allowed to wrap: a producer's reason is never clipped on the surface that
+   owns it. */
+.findings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 13px;
+  padding: 0;
+  list-style: none;
+}
+
+.findings li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 12px;
+}
+
+.findings-subject {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.findings-sentence {
+  min-width: 0;
+  flex: 1;
+  color: var(--muted);
+}
+
+.findings-age {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------- health line --- */
+
+/* One line, one dot, and the findings one click below. It replaced a red banner
+   and six reason chips that between them claimed six problems where there were
+   three. The dot is the only colour on it: a strip that turns red whenever a
+   vendor is quiet teaches the operator to stop reading the strip. */
+.health {
+  margin: 0 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.health-line {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 11px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+/* The state class beside it sets `color`; this fills the dot from it, so the
+   one place a state becomes a colour stays the one place. */
+.health-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.health-text {
+  min-width: 0;
+  flex: 1;
+  color: var(--ink);
+}
+
+.health-more {
+  flex: none;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.health-detail {
+  padding: 0 11px 9px;
+}
+
+.health-breakdown {
+  margin: 0 0 8px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The findings list owns its own bottom margin for the case where it is the
+   last thing in the panel body. Inside the strip it is not. */
+.health-detail .findings {
+  margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------ withheld ---- */
+
+/* A withheld total prints its reason under the blank rather than beside it, so
+   the sentence cannot be mistaken for a second figure. */
+.withheld-mark {
+  color: var(--faint);
+}
+
+.withheld-readings {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 10px 0 0;
+  font-size: 10px;
+}
+
+.withheld-readings dt {
+  color: var(--state-stale);
+}
+
+.withheld-readings dd {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+/* ------------------------------------------------------------------ forms -- */
+
+.form-page {
+  max-width: 420px;
+  margin: 10vh auto 0;
+}
+
+.form-card {
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 22px 24px;
+}
+
+.form-card h1 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.form-lede {
+  margin: 8px 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.field > span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible {
+  border-color: var(--accent);
+}
+
+.button-primary {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgba(216, 199, 155, 0.45);
+  border-radius: 8px;
+  background: rgba(216, 199, 155, 0.1);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.button-primary:hover:not([disabled]) {
+  background: rgba(216, 199, 155, 0.16);
+}
+
+.button-primary[disabled] {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* Margin on both sides: this block appears above the fields when it is telling
+   the operator the deployment has no project, and below them when it is a
+   refusal from the auth server. */
+.form-error {
+  margin: 12px 0;
+  color: var(--state-failed);
+  font-size: 12px;
+}
+
+.form-ok {
+  margin: 12px 0 0;
+  color: var(--up);
+  font-size: 12px;
+}
+
+/* ====================================================================== */
+/* Added for this system. Everything above is ported verbatim.            */
+/* ====================================================================== */
+
+/* -------------------------------------------------- condition status ------ */
+
+/* Whether a stated condition currently holds. Five states, defined once here
+   and resolved into a class in `lib/conditions.ts` and nowhere else.
+
+   `met` and `failed` borrow the market tokens because a tracker condition is a
+   genuine binary claim about the world, not a direction of travel: `met` means
+   the thing written down happened. `not yet` is the muted token rather than a
+   third colour, because "has not happened" is the resting state of most
+   conditions most of the time and a screen of four trackers should not read as
+   twelve warnings.
+
+   `unevaluable` takes `--state-unrated`, per the contract: a condition that
+   could not be evaluated is a different kind of claim from one that was
+   evaluated and did not hold, and collapsing them is the single failure
+   `docs/DECISIONS.md` names when it says a tracker that silently scores an
+   unevaluated condition as `not yet` is not trustworthy unattended.
+
+   `void` takes `--faint` plus a strikethrough. A void clause is kept in its
+   `n_of` denominator and is never renormalised away, so it has to stay legible
+   while being visibly out of the count. */
+:root {
+  --cond-met: var(--up);
+  --cond-not-yet: var(--muted);
+  --cond-failed: var(--down);
+  --cond-unevaluable: var(--state-unrated);
+  --cond-void: var(--faint);
+}
+
+.cond-met {
+  border-color: rgba(99, 188, 138, 0.38);
+  background: rgba(99, 188, 138, 0.09);
+  color: var(--cond-met);
+}
+
+.cond-not-yet {
+  border-color: rgba(139, 152, 164, 0.34);
+  background: rgba(139, 152, 164, 0.06);
+  color: var(--cond-not-yet);
+}
+
+.cond-failed {
+  border-color: rgba(224, 115, 107, 0.42);
+  background: rgba(224, 115, 107, 0.1);
+  color: var(--cond-failed);
+}
+
+.cond-unevaluable {
+  border-color: rgba(162, 139, 196, 0.42);
+  background: rgba(162, 139, 196, 0.09);
+  color: var(--cond-unevaluable);
+}
+
+.cond-void {
+  border-color: rgba(107, 120, 131, 0.4);
+  border-style: dashed;
+  background: transparent;
+  color: var(--cond-void);
+}
+
+/* The clause itself, beside its chip. A void clause is struck through and
+   dimmed; it is never removed, because removing it would quietly make the
+   scenario easier to satisfy. */
+.cond-row {
+  display: grid;
+  grid-template-columns: 11ch minmax(0, 1fr) minmax(0, 30ch);
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(37, 45, 53, 0.7);
+}
+
+.cond-row:last-child {
+  border-bottom: none;
+}
+
+.cond-text {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 12.5px;
+}
+
+.cond-row.is-void .cond-text {
+  color: var(--cond-void);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* What the condition is currently reading.
+
+   Wrapped to two lines, never ellipsised, for the same reason the snapshot's
+   read is: the evidence a clause is judged against is the half the operator
+   has to check, and a cut one cannot be checked. Two lines are reserved on
+   every row so a four-condition tracker is four equal blocks.
+
+   Mono and right-aligned, so figures stacked above one another line up. */
+.cond-current {
+  min-height: 2.6em;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.cond-current.absent {
+  color: var(--cond-unevaluable);
+}
+
+/* The reason a clause was voided, under the clause and never instead of it. */
+.cond-reason {
+  grid-column: 2 / -1;
+  margin: 2px 0 0;
+  color: var(--state-stale);
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------ band occupancy ---- */
+
+/* A target band, drawn as a small horizontal extent with the current value
+   marked on it.
+
+   Direction colour is deliberately absent. Green and red mean "this moved in
+   your favour today" on a live book. A scenario target is a statement about a
+   forecast, not about a position, and painting a band that has broken to the
+   upside in the same green a winning trade wears would make a forecast read as
+   a P&L.
+
+   So: `--flat` while the value is inside the band, `--urgency-2` once it is
+   within a tenth of the band's width of either edge, and `--faint` once it is
+   outside. A band whose series has no reading draws dashed in the unrated
+   token with no marker at all, because a marker at either end would be a
+   position this system does not hold. */
+:root {
+  --band-track: var(--line);
+  --band-edge: var(--line-strong);
+  --band-holding: var(--flat);
+  --band-near: var(--urgency-2);
+  --band-outside: var(--faint);
+  --band-unevaluable: var(--state-unrated);
+}
+
+.band {
+  position: relative;
+  width: 132px;
+  height: 14px;
+  flex: none;
+}
+
+/* The rail the whole extent sits on, at the row's full width. */
+.band-rail {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--band-track);
+}
+
+/* The band itself: the interval the forecast named. */
+.band-span {
+  position: absolute;
+  top: 4px;
+  height: 6px;
+  border-radius: 1px;
+  background: rgba(139, 152, 164, 0.22);
+  border-left: 1px solid var(--band-edge);
+  border-right: 1px solid var(--band-edge);
+}
+
+.band.is-unevaluable .band-span {
+  background: none;
+  border: 1px dashed rgba(162, 139, 196, 0.5);
+  border-radius: 2px;
+}
+
+/* The current value. A 2px rule rather than a dot: a dot has a centre the eye
+   has to find, and at this size the rule is the reading. */
+.band-mark {
+  position: absolute;
+  top: 1px;
+  width: 2px;
+  height: 12px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--band-holding);
+}
+
+.band.is-near .band-mark {
+  background: var(--band-near);
+}
+
+.band.is-outside .band-mark {
+  background: var(--band-outside);
+}
+
+/* A value beyond the drawn extent is pinned to the edge and given a caret, so
+   "just outside" and "miles outside" are not drawn identically. */
+.band-mark.is-clamped::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  width: 0;
+  height: 0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+.band-mark.clamp-low::after {
+  right: 3px;
+  border-right: 4px solid currentColor;
+}
+
+.band-mark.clamp-high::after {
+  left: 3px;
+  border-left: 4px solid currentColor;
+}
+
+.band-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px 12ch 13ch;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(37, 45, 53, 0.7);
+}
+
+.band-row:last-child {
+  border-bottom: none;
+}
+
+.band-label {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 12.5px;
+}
+
+.band-bounds,
+.band-current {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.band-current.is-holding {
+  color: var(--ink);
+}
+
+.band-current.is-near {
+  color: var(--band-near);
+}
+
+/* An edge the forecast should have stated and did not. Amber, because it is a
+   caution about the forecast rather than a fault in the data. */
+.band-bounds.is-incomplete {
+  color: var(--state-stale);
+}
+
+.band-current.is-unevaluable {
+  color: var(--band-unevaluable);
+}
+
+/* A `manual` target carries no band at all. It is presented for judgment, and
+   the empty slot keeps the row's geometry so the column does not collapse. */
+.band.is-manual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+/* --------------------------------------------------------- the snapshot --- */
+
+/* Fixed column widths in `ch` against the mono face, so a value going from
+   6,612 to 6,612.25 cannot push the as-of column sideways.
+
+   Every column is sized to its content and one column takes the slack, which
+   is the reverse of how this table used to be laid out. The series column was
+   the elastic one, so on a wide panel the names sat at the far left and the
+   first figure began six hundred pixels away with nothing in between: the eye
+   crossed a hand's width of empty table on every row to reach the number the
+   row is about. The slack now goes to the thirty-day trend, which is the one
+   thing here that is better for having more of it, and the name and its
+   figures sit next to each other again. */
+.snapshot-table {
+  min-width: 760px;
+}
+
+/* Sized to the longest series name and no further. `width: 1%` is the table
+   layout idiom for "as narrow as the content allows": the algorithm gives a
+   percentage column its share only after the content minimum is met, and
+   `nowrap` sets that minimum to the whole name. */
+.snapshot-table col.c-series {
+  width: 1%;
+}
+
+.snapshot-table td:first-child,
+.snapshot-table th:first-child {
+  white-space: nowrap;
+}
+
+/* The one elastic column. It has no content minimum of its own: an SVG scales
+   to whatever width it is given, so it can absorb the slack without any other
+   column giving one character back. */
+.snapshot-table col.c-trend {
+  width: auto;
+}
+
+.snapshot-table th.c-trend {
+  text-align: left;
+  padding-left: 13px;
+}
+
+.snapshot-table td.c-trend {
+  padding-top: 0;
+  padding-bottom: 0;
+  vertical-align: middle;
+}
+
+/* Thirty days at the size of a word. Height is fixed in pixels so a row's
+   height cannot depend on whether a sparkline was drawn; width is 100% of the
+   cell so the plot widens with the panel. `preserveAspectRatio: none` on the
+   element is what lets those two coexist.
+
+   Muted, and in no direction colour. A series going up is not a position
+   moving in your favour, and the delta column two cells left already states
+   the direction as a signed figure. */
+.spark {
+  display: block;
+  width: 100%;
+  /* Capped: past this a month of moves drawn 16px tall reads as a rule, not
+     a line, and the as-of column is a hand's width from the figure again. */
+  max-width: 560px;
+  min-width: 60px;
+  height: 16px;
+}
+
+.spark-line {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+/* A row whose as-of is the evaluation date: it printed in this reading.
+
+   A rule on the first cell rather than a fill on the row. Forty rows of tinted
+   background is a table with a mood; a two-pixel accent edge is a mark the eye
+   picks up when scanning the left column and ignores when reading a figure.
+   Drawn as an inset shadow because a border on a cell inside `border-collapse`
+   fights the table's own grid. */
+.snapshot-table tr.row-moved td:first-child {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.snapshot-table col.c-value {
+  width: 13ch;
+}
+/* Wide enough for the widest legal figure in this column, which is a dollar
+   flow: `+468,900,000` is twelve characters. Sized for that rather than for the
+   percentage points on the row above, so a delta that grows by an order of
+   magnitude cannot push the as-of column sideways. */
+.snapshot-table col.c-delta {
+  width: 13ch;
+}
+.snapshot-table col.c-asof {
+  width: 12ch;
+}
+.snapshot-table col.c-next {
+  width: 12ch;
+}
+.snapshot-table col.c-state {
+  width: 15ch;
+}
+
+/* The prose table's label column. Fixed, so five sentences of wildly different
+   length all start at the same x and the eye reads down the labels. */
+.snapshot-table col.c-prose-label {
+  width: 26ch;
+}
+
+.snapshot-table.is-prose {
+  min-width: 620px;
+}
+
+.snapshot-table td,
+.snapshot-table th {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* The cadence label rides under the delta rather than taking a column of its
+   own: it is the unit of that number and nothing else. Without it a `+0.9`
+   beside a weekly series reads as a one-day move, which is a fabricated
+   figure. */
+/* The read is no longer beside the number. It lives in the row's disclosure,
+   with the series' trend and its observations, because forty-seven reads
+   printed inline is a page of prose with figures in it. The table is the
+   figures; opening a row gives the argument.
+
+   That is what makes the table dense: every row is one line, and one line is
+   the same height whatever a series carries. Nothing here depends on a value,
+   so nothing reflows on a tick. */
+.snapshot-table td small {
+  display: block;
+  max-width: 78ch;
+  color: var(--faint);
+  font-family: var(--sans);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.snapshot-table td,
+.snapshot-table th {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+/* The sub-label under a figure: the cadence a delta is over, the side an
+   invalidation closes on, the day a reading was released.
+
+   It rides under its number rather than taking a column of its own, because it
+   is the unit of that number and nothing else. Without it a `+0.9` beside a
+   weekly series reads as a one-day move, which is a fabricated figure, and a
+   `7,450` with no side is half a trade instruction.
+
+   Defined for every table rather than for the snapshot alone: scoping it to
+   one table is how `76,000` and `close below` end up printed as one word. */
+.tbl td .cadence {
+  display: block;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* An index pair folded into one cell, as the journal writes it:
+   `7,657.35 (cash 7,650.50, -0.08%)`. The front-month level leads at full
+   weight and the cash level sits under it at the sub-label size.
+
+   Both numbers stay visible, which is the condition on folding them at all.
+   They remain two series in macro_mart.snapshot_row and every condition,
+   scenario band and setup level still resolves against the cash one; burying
+   the value a condition reads inside another row's formatting is the mistake
+   R1 was written about, and printing both answers it.
+
+   The percentage is the cash index's. Contract rolls contaminate a front-month
+   week-over-week, which is the arithmetic R1 is about. */
+.paired-cash {
+  display: block;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A group heading inside the snapshot: Price & Levels, Sentiment, Flows. */
+.snapshot-group-head h3 {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* The disclosure control, on the right where the row ends rather than on the
+   left where the name begins. A column of four characters, so it costs the
+   table almost nothing. */
+.snapshot-table col.c-open {
+  width: 4ch;
+}
+
+.snapshot-table td.c-open {
+  padding-left: 0;
+  text-align: right;
+}
+
+.row-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.row-open svg {
+  width: 9px;
+  height: 6px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 120ms ease;
+}
+
+.row-open:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.row-open[aria-expanded="true"] {
+  border-color: rgba(216, 199, 155, 0.4);
+  color: var(--accent);
+}
+
+/* Rotated, not swapped for a different glyph: the control is the same control
+   and the rotation is what says which way it will go. */
+.row-open[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+/* An abnormal freshness state, on the row rather than in a column of its own.
+   `fresh` and `due` are the two normal states and neither gets a chip, so a
+   column for this would be blank on most rows most of the time, and a header
+   over permanent blankness reads as missing data rather than as nothing being
+   wrong. */
+.row-state {
+  margin-left: 7px;
+  vertical-align: middle;
+}
+
+.row-gap {
+  margin-left: 5px;
+  color: var(--state-stale);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+/* The opened row. One cell spanning the table, so the detail is not forced
+   into the fixed column widths the figures above it are pinned to. */
+.row-detail > td {
+  padding: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.series-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 14px 22px;
+  padding: 12px 15px 14px;
+}
+
+@media (max-width: 1100px) {
+  .series-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.series-detail-reads {
+  min-width: 0;
+}
+
+.series-detail-chart {
+  min-width: 0;
+}
+
+/* No read on this observation. Two words, and no paragraph explaining the
+   policy: a reader wants the insight or its absence, not an essay about how
+   absences are handled. */
+.series-detail-none {
+  margin: 0;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.series-detail-rows {
+  grid-column: 1 / -1;
+}
+
+.series-detail-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.series-detail-head .faint {
+  margin-left: auto;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* The read each observation was written with. Wrapped, never truncated, for
+   the same reason the snapshot's current read is. */
+.obs-read {
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+/* No read was written. Faint and named, never blank and never borrowed from a
+   neighbour: a read shown beside a value it was not written about is a
+   sentence attributed to a day that did not produce it. */
+.obs-read-none {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.series-detail-note {
+  margin: 0;
+  max-width: 84ch;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+/* How many of the observations on record carry a read of their own, and what
+   the blank on the others means. Stated rather than left to be noticed: an
+   empty column the reader has to interpret is an absence pretending to be a
+   presentation choice. */
+.series-detail-gap {
+  margin: 8px 0 0;
+  max-width: 84ch;
+  color: var(--faint);
+  font-size: 10.5px;
+}
+
+/* A group heading inside the snapshot: Price & Levels, Sentiment, Flows. */
+.snapshot-group {
+  margin: 0 0 14px;
+}
+
+.snapshot-group:last-child {
+  margin-bottom: 0;
+}
+
+.snapshot-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 6px;
+}
+
+.snapshot-group-count {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* An anchor the whole week-open column is measured from, stated once under the
+   table rather than repeated on 43 rows. */
+.snapshot-anchor {
+  margin: 0;
+  padding: 9px 13px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-text td.state {
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  text-align: left;
+  white-space: normal;
+}
+
+/* --------------------------------------------------- the standing states -- */
+
+/* Macro & Fiscal State, which is five sentences rather than five figures.
+
+   Not a table. Those rows were drawn in the numeric grid, where a paragraph on
+   the active tariff regime was squeezed into a 13ch Value column beside two
+   empty delta cells and an empty trend cell, at a hundred and sixty pixels of
+   row height. Four columns of nothing is not an absence of data, it is a table
+   shape that does not fit what it holds.
+
+   Two columns: the label at a fixed width so five states of wildly different
+   length all begin at the same x and the eye reads down the labels, and the
+   sentence taking the rest. */
+.standing-state {
+  display: flex;
+  flex-direction: column;
+}
+
+.standing-row {
+  display: grid;
+  grid-template-columns: 26ch minmax(0, 1fr);
+  gap: 0 13px;
+  padding: 9px 13px;
+  border-bottom: 1px solid rgba(37, 45, 53, 0.7);
+}
+
+.standing-row:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 760px) {
+  .standing-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+.standing-label {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.standing-body {
+  min-width: 0;
+}
+
+/* The state itself, at reading width and never truncated. A macro state cut
+   off mid-clause is worse than none: the reader cannot tell whether the
+   missing half changes the meaning. */
+.standing-text {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.standing-asof {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.standing-asof .row-open {
+  margin-left: auto;
+}
+
+/* The figures a value cell kept out, so a 13ch column did not become four
+   lines. They are readings and not decoration, so they are listed in full. */
+.series-detail-also {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+/* ---------------------------------------- a text series, opened out -- */
+
+/* What a standing state said, week by week. One column: there is no chart
+   beside it, and the reads it carried sit under their own entries. Inside a
+   standing row the body is already indented to the sentence, so the detail
+   drops its own side padding and lines up with it. */
+.series-detail-prose {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.standing-body .series-detail-prose {
+  margin-top: 8px;
+  padding: 10px 0 2px;
+  border-top: 1px solid rgba(37, 45, 53, 0.7);
+}
+
+.series-detail-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The day on the left at a fixed width, so every sentence begins at the same
+   x and the dates read down as a column. */
+.series-detail-entry {
+  display: grid;
+  grid-template-columns: 11ch minmax(0, 1fr);
+  gap: 0 12px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(37, 45, 53, 0.7);
+}
+
+.series-detail-entry:first-child {
+  padding-top: 2px;
+  border-top: none;
+}
+
+.series-detail-entry:last-child {
+  padding-bottom: 0;
+}
+
+.series-detail-entry-day {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  /* One line of the sentence beside it, so the two share a baseline. */
+  line-height: 18px;
+  overflow-wrap: normal;
+}
+
+.series-detail-entry-body {
+  min-width: 0;
+}
+
+/* The statement in full, wrapped and never truncated, for the same reason the
+   standing state above it is not. */
+.series-detail-entry-text {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* The read this observation carried, where one was written. */
+.series-detail-entry-read {
+  margin: 5px 0 0;
+  padding-left: 8px;
+  border-left: 2px solid var(--line-strong);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.series-detail-entry-read-day {
+  margin-right: 6px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.series-detail-entry-source {
+  margin: 4px 0 0;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+
+.series-detail-entry-source span {
+  font-size: inherit;
+}
+
+.series-detail-entry-source a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 2px;
+}
+
+.series-detail-entry-source a:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+@media (max-width: 520px) {
+  .series-detail-entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .series-detail-entry-day {
+    line-height: 1.4;
+  }
+}
+
+/* ---------------------------------------------------------- the chart --- */
+
+/* Accounting's geometry doctrine: horizontal positions are percentages of the
+   SVG's own width so the plot scales with the panel, vertical positions are
+   pixels so the axis type never stretches. No direction colour: a series going
+   up is not a position moving in your favour. */
+.chart {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 9px 11px 7px;
+}
+
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.chart-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chart-windows {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.chart-window {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+}
+
+.chart-window:hover {
+  color: var(--ink);
+}
+
+.chart-window[aria-pressed="true"] {
+  border-color: rgba(152, 162, 172, 0.3);
+  background: rgba(152, 162, 172, 0.07);
+  color: var(--state-dated);
+}
+
+/* A window holding fewer than two observations is offered and marked, so the
+   reader sees that the series lacks the history rather than wondering why the
+   plot is empty. */
+.chart-window-thin {
+  color: var(--state-stale);
+  font-style: normal;
+  margin-left: 2px;
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  touch-action: none;
+}
+
+.chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* A measured point with a break either side. Drawn rather than dropped: it is
+   a reading we hold, and a line cannot be struck through one point. */
+.chart-point {
+  fill: var(--muted);
+}
+
+.chart-cursor {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.chart-cursor-dot {
+  fill: var(--ink);
+}
+
+/* Three lines reserved, so moving the cursor onto the plot cannot shift the
+   table beneath it. */
+.chart-readout {
+  display: flex;
+  gap: 4px 14px;
+  flex-wrap: wrap;
+  margin: 5px 0 0;
+  min-height: 3.1em;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-readout-value {
+  color: var(--ink);
+}
+
+.chart-readout-note {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
+.chart-absent {
+  margin: 0;
+  max-width: 62ch;
+  min-height: 3em;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+/* ------------------------------------------- the scenario comparison ----- */
+
+.judgment-section + .judgment-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+/* Fixed layout, so the trigger column gets what the other two leave rather
+   than what their content bargains for. Under the automatic layout a long
+   target label and a judgment sentence set the targets column's width and
+   squeezed the triggers to one word a line at 2000px. */
+.scenario-table {
+  width: 100%;
+  min-width: 900px;
+  table-layout: fixed;
+}
+
+.scenario-table col.c-scenario {
+  width: 30ch;
+}
+.scenario-table col.c-trigger {
+  width: auto;
+}
+/* The targets column takes the width its four columns actually need, and takes
+   it from the trigger column, which wraps prose and can give it up. At 340 the
+   asset, the value, the state chip and the band shared about 260 pixels and
+   every label truncated to an ellipsis: `10Y 4.90–…`, `Nasdaq be…`. A column
+   of ellipses is not a comparison. */
+.scenario-table col.c-targets {
+  width: 480px;
+}
+
+.scenario-table td {
+  vertical-align: top;
+}
+
+/* The base case carries the accent, exactly as Accounting marks its own row in
+   the comparison table: one row in three is the one the ledger scores, and the
+   reader should not have to compare three probabilities to find it. */
+.row-base {
+  background: rgba(216, 199, 155, 0.05);
+}
+
+.row-base .sc-title {
+  color: var(--accent);
+}
+
+.sc-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.sc-ordinal {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.sc-prob {
+  margin-left: auto;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.sc-title {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.sc-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 6px 0 0;
+}
+
+.sc-chips:empty {
+  display: none;
+}
+
+/* What a card had room for and a row does not. Three counters, each labelled,
+   each a link between a forecast and what the tape is doing about it. */
+.sc-counters {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+}
+
+.sc-counter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 10px;
+}
+
+.sc-counter b {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.sc-counter-value {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sc-counter i {
+  grid-column: 1 / -1;
+  color: var(--state-stale);
+  font-family: var(--sans);
+  font-size: 10px;
+  font-style: normal;
+}
+
+/* The targets, on one line and against one denominator. Two labelled counters
+   and a footnote warning the reader not to confuse them was a confusion handed
+   over with a warning attached. This says what the figure is made of instead:
+   how many hold, how many are waiting for a call, how many nobody could read. */
+.sc-targets-line {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.sc-clauses {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-clauses li {
+  display: grid;
+  grid-template-columns: 8ch minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(37, 45, 53, 0.6);
+}
+
+/* Nothing in this trigger was evaluated, so there is no chip to align with and
+   the chip track would only indent every clause. */
+.sc-clauses.is-plain li {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sc-clauses.is-plain .sc-clause-text {
+  grid-column: 1;
+}
+
+.sc-clauses li:last-child {
+  border-bottom: none;
+}
+
+/* A void clause is struck through and kept, never removed: it stays in the
+   n_of denominator and the threshold is not renormalised. */
+.sc-clauses li.is-void .sc-clause-text {
+  color: var(--cond-void);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.sc-dot {
+  border: 1px solid;
+  border-radius: 3px;
+  padding: 0 3px;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Pinned to the second track. An unevaluated clause carries no chip, and
+   without this its text auto-placed into the 8ch chip track and wrapped one
+   word a line down a column that was otherwise wide. */
+.sc-clause-text {
+  grid-column: 2;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 11.5px;
+  line-height: 1.3;
+}
+
+.sc-clause-now {
+  display: block;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-clause-void {
+  display: block;
+  margin-top: 2px;
+  color: var(--state-stale);
+  font-size: 10px;
+  font-style: normal;
+  text-decoration: none;
+}
+
+/* Said once for the scenario, under the clauses, instead of once per clause as
+   a chip. Four clauses each wearing the same UNEVALUABLE chip was the loudest
+   thing in the column and it distinguished nothing. */
+.sc-clauses-note {
+  margin: 5px 0 0;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-positioning {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+/* The compact target, for a cell holding thirteen of them rather than a card.
+
+   No extent is drawn. At 76 pixels the mark and the span were a diagram the
+   reader had to be taught to read. A reader scanning three scenarios across
+   one row is comparing bands to each other, not studying one, so this answers
+   the three questions in words and figures: what is it now, does it hold, what
+   was forecast. IN, NEAR and OUT need no key.
+
+   The occupancy colours are a scale of attention and not a P&L: IN is the
+   green the condition vocabulary already gives a met claim, NEAR is the
+   caution amber, OUT is muted and deliberately not red, and a judgment target
+   is the unrated violet. Nothing here says a position moved in your favour.
+
+   Asset, band, now, state, in that order. The asset leads because it is the
+   column the eye runs down; the band and the value sit together because they
+   are the forecast and the tape's answer to it; the state word ends the row.
+   Each column is given the width its own content needs, so nothing truncates
+   at 1280: the asset column is the remainder, and it is never the one that
+   gives way. */
+.band-row.is-compact {
+  grid-template-columns: minmax(0, 1fr) 21ch 12ch 5.5ch;
+  gap: 9px;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(37, 45, 53, 0.5);
+}
+
+/* The asset, off the front of the authored label. The qualification the author
+   wrote after it is on the row's own title, because it is the part that made
+   every one of these truncate. */
+.band-row.is-compact .band-label {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.band-row.is-compact .band-current,
+.band-row.is-compact .band-bounds {
+  font-size: 10.5px;
+}
+
+/* A judgment target states a sentence rather than a band, so it takes the two
+   numeric columns and is allowed to wrap. Truncating it would hide the whole
+   of what the scenario will be graded against. */
+.band-row.is-compact .band-manual-text {
+  grid-column: 2 / 4;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+.band-state {
+  border: 1px solid;
+  border-radius: 3px;
+  color: var(--flat);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 1px 0;
+  text-align: center;
+}
+
+/* IN wears the met green, which is the token a satisfied claim already wears on
+   every condition chip in this app. It is not a direction colour: there is no
+   red counterpart, and a band that has broken out is muted rather than hurt. */
+.band-state.is-holding {
+  border-color: rgba(99, 188, 138, 0.38);
+  background: rgba(99, 188, 138, 0.09);
+  color: var(--cond-met);
+}
+
+.band-state.is-near {
+  border-color: rgba(210, 166, 63, 0.42);
+  background: rgba(210, 166, 63, 0.1);
+  color: var(--band-near);
+}
+
+.band-state.is-outside {
+  border-color: rgba(107, 120, 131, 0.35);
+  background: transparent;
+  color: var(--band-outside);
+}
+
+.band-state.is-unevaluable {
+  border-color: rgba(162, 139, 196, 0.42);
+  background: rgba(162, 139, 196, 0.09);
+  color: var(--band-unevaluable);
+}
+
+/* A judgment target takes the unrated violet, the same token an unevaluable
+   band takes, because both are cases the worker did not score. The dashed edge
+   is what keeps them apart: one is waiting for a call, the other for a print. */
+.band-state.is-judgment {
+  border-color: rgba(162, 139, 196, 0.42);
+  border-style: dashed;
+  background: transparent;
+  color: var(--band-unevaluable);
+}
+
+.band-row.is-compact .band-manual-text.is-alone {
+  grid-column: 1 / 4;
+  font-style: italic;
+}
+
+.band-row.is-manual-row .band-label {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* -------------------------------------------------------- the phase tile -- */
+
+/* The stage inside the phase, as three ordered segments.
+
+   A different axis from the tracker beneath it, which counts toward the NEXT
+   phase: a Phase 3 that has just begun and a Phase 3 six weeks into
+   deteriorating internals both read 0 of 4 and mean opposite things. Drawn as
+   one strip because early, mid and late are an ordered scale inside one phase. */
+/* `.ledger-cell > span` styles the tile's label, and it would catch this strip
+   too and flatten it to a block, which leaves the segments inline and drops
+   their width entirely. Matched on the element as well as the class so the
+   strip outranks it. */
+.phase-stage,
+.ledger-cell > span.phase-stage {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.phase-stage i {
+  display: block;
+  width: 13px;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--line-strong);
+}
+
+.phase-stage i.is-here {
+  background: var(--accent);
+}
+
+/* No stage authored. Dashed and empty, never filled at one end: a guess about
+   where inside the phase the reading sits would be a judgment nobody made. */
+.phase-stage i.is-unknown {
+  background: none;
+  border: 1px dashed var(--line-strong);
+}
+
+.phase-tile > strong {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.phase-stage-word {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+
+.phase-tile .phase-stage {
+  margin-top: 8px;
+}
+
+/* How the read stands, in one small line under the strip: the same as last
+   week and for how long, or what it was, and how many of its four hold. When
+   two have failed the line turns amber and says the read may be out of date. */
+.ledger-cell > small.phase-standing {
+  display: flex;
+  gap: 3px 8px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+
+.phase-standing b {
+  margin-left: auto;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.phase-standing.is-stale b {
+  margin-left: 0;
+  color: var(--state-stale);
+}
+
+/* When the phase was read, when it is read next, and the stage, as one small
+   line at the top of the card. A read is a snapshot, so the day it was taken
+   is part of the call. */
+.phase-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-meta > span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.phase-meta b {
+  color: var(--line-strong);
+  font-weight: 400;
+}
+
+.phase-reading-why {
+  margin: 6px 0 0;
+  /* 76ch at 11px is the reason's 70ch at 12px, so the two paragraphs wrap on
+     one measure. */
+  max-width: 76ch;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* The stage word leading its reason, in the accent the tile uses for it. */
+.phase-stage-label {
+  margin-right: 6px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.phase-meta .is-overdue {
+  color: var(--state-stale);
+}
+
+/* How this week's read stands to last week's: `Same as last week, 8 weeks
+   running`, or `Was P3 last week, now P2` in the accent, with the one-sentence
+   change note under it. */
+.phase-move {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.phase-move.is-moved {
+  color: var(--accent);
+}
+
+.phase-move > span {
+  display: block;
+  margin-top: 3px;
+  max-width: 70ch;
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+/* A read that may be out of date, or a score that still belongs to the
+   previous call. Amber: a caution to read with, never a fault. */
+.phase-divergence {
+  margin: 0 0 12px;
+  padding: 8px 11px;
+  border: 1px solid rgba(210, 166, 63, 0.3);
+  border-radius: 9px;
+  background: rgba(210, 166, 63, 0.05);
+  color: var(--state-stale);
+  font-size: 11.5px;
+}
+
+/* ------------------------------------------------------------ the phase --- */
+
+/* Two books, never more. Stated as two columns rather than left to `auto-fit`,
+   which at a terminal width fits three and leaves the third empty while
+   squeezing the two that exist into a third of the room they have. */
+.phase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .phase-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.phase-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.phase-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-raised);
+}
+
+.phase-asset {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.phase-name {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The tracker chip ends the header row. It replaced a bare `0 of 4 to P4`
+   beside an `UPGRADE BLOCKED` chip that repeated it, so it takes the position
+   the pair of them used to share. */
+.phase-card-head .chip {
+  margin-left: auto;
+}
+
+.phase-score {
+  margin-left: auto;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-body {
+  padding: 12px 13px;
+}
+
+.phase-prior {
+  margin: 0 0 8px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.phase-reason {
+  margin: 8px 0 10px;
+  max-width: 70ch;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Migrated reasons were written as clauses, some starting in lower case. */
+.phase-reason::first-letter {
+  text-transform: uppercase;
+}
+
+/* The heading over the four conditions: `Holds while` on a fresh read, the
+   old tracker's name on a carried one, with the count and the coverage. */
+.phase-conditions-head {
+  display: flex;
+  align-items: baseline;
+  gap: 4px 10px;
+  flex-wrap: wrap;
+  margin: 12px 0 6px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-conditions-head b {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.phase-evidence {
+  margin: 10px 0 0;
+  padding: 0 0 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.phase-evidence li {
+  margin-bottom: 3px;
+}
+
+.phase-falsifier {
+  margin: 10px 0 0;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--state-stale);
+  border-radius: 0 8px 8px 0;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.phase-falsifier b {
+  color: var(--state-stale);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------- the scenarios -- */
+
+.scenario-set-head {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.scenario-set-head p {
+  margin: 0 0 8px;
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* The synthesis beside the swing variables.
+
+   The synthesis is one paragraph at a sane measure and the four swing
+   variables are a list of short two-sided pairs; stacked, the paragraph wraps
+   at 740px inside a 1,560px panel and leaves the right half of the screen
+   empty above a full-width scenario table. Side by side they fill the row and
+   each keeps a measure it can be read at: 78ch is about eleven words a line,
+   which is what a paragraph wants, and neither column is allowed to stretch
+   past it. */
+.scenario-set-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .scenario-set-split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+.scenario-set-split > * {
+  min-width: 0;
+}
+
+/* No swing variables to sit beside it: the synthesis takes the row, at a
+   reading measure, rather than leaving the right half of the card empty. */
+.scenario-set-split.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.scenario-set-split.is-single > p {
+  max-width: 110ch;
+}
+
+.scenario-set-split .swing-list {
+  margin-bottom: 0;
+}
+
+.scenario-set-head p:last-child {
+  margin-bottom: 0;
+}
+
+.scenario-set-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.scenario-set-facts dt {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scenario-set-facts dd {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scenario {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.scenario + .scenario {
+  margin-top: 10px;
+}
+
+/* The base case carries the accent, exactly as Accounting marks its own row in
+   the comparison table: one row in three is ours, and the reader should not
+   have to compare three probabilities to find it. */
+.scenario.is-base {
+  border-color: rgba(216, 199, 155, 0.34);
+}
+
+.scenario.is-base .scenario-head {
+  background: rgba(216, 199, 155, 0.06);
+}
+
+.scenario.is-base .scenario-title {
+  color: var(--accent);
+}
+
+.scenario-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-raised);
+}
+
+.scenario-ordinal {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.scenario-title {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The probability, at ledger-tile size. It is the number the Brier score is
+   computed against and the only figure on this screen that is a forecast. */
+.scenario-probability {
+  margin-left: auto;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.scenario-body {
+  padding: 12px 13px;
+}
+
+.scenario-positioning {
+  margin: 0 0 12px;
+  max-width: 120ch;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.scenario-section {
+  margin-top: 12px;
+}
+
+.scenario-section:first-child {
+  margin-top: 0;
+}
+
+.scenario-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.scenario-section-head h4 {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.scenario-section-count {
+  margin-left: auto;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* `premise moved` is a flag, never a rescore. The trigger keeps its void clause
+   in the denominator and the Brier score is not forgiven. */
+.premise-moved {
+  border-color: rgba(210, 166, 63, 0.38);
+  background: rgba(210, 166, 63, 0.09);
+  color: var(--state-stale);
+}
+
+/* ------------------------------------------------------------ the setups -- */
+
+/* Wide enough that the setup column keeps about half the table after the eight
+   fixed numeric columns take their `ch`. A gate clause is a sentence and it is
+   the thing the operator checks a refusal against, so it gets the room. */
+/* Fixed layout, so the setup column takes what the level columns leave and
+   its one-line gate clause ellipsizes as `.setup-detail` intends. Under the
+   automatic layout that clause's full unwrapped width became the column's
+   minimum and pushed the table past the panel. */
+.setups-table {
+  min-width: 900px;
+  table-layout: fixed;
+}
+
+.setups-table col.c-setup {
+  width: auto;
+}
+.setups-table col.c-band {
+  width: 23ch;
+}
+.setups-table col.c-level {
+  width: 12ch;
+}
+.setups-table col.c-rr {
+  width: 8ch;
+}
+.setups-table col.c-gate {
+  width: 13ch;
+}
+.setups-table col.c-entry {
+  width: 22ch;
+}
+
+/* The row this whole system exists for: the entry band was reached and the gate
+   refused, so the trade was forgone. Three weeks running that was found the
+   following Monday. It is a caution, not a fault: nothing broke, a decision was
+   made, and the operator needs to see it the same day. */
+.row-refused {
+  background: rgba(210, 166, 63, 0.07);
+}
+
+/* A setup the worker did not score, because it names no series its levels
+   could be resolved against. Marked with the unrated token rather than the
+   caution one: nothing went wrong and nothing is late, the row simply carries
+   no verdict, and it is a different kind of claim from a gate that refused. */
+/* A sector-focus row that could not be matched back to a band. Its sentence is
+   shown as written rather than guessed at, at the sub-label size so it does not
+   compete with the setup's name. */
+.setup-focus {
+  display: block;
+  margin: 2px 0 0;
+  max-width: 72ch;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
+/* The four bands, on the tag that marks which row a setup sits under. The same
+   ordinal scale of conviction the strategy card uses, so one band is one colour
+   wherever it appears. */
+.row-flag.flag-critical {
+  border-color: rgba(216, 199, 155, 0.4);
+  color: var(--accent);
+}
+
+.row-flag.flag-hold {
+  border-color: rgba(152, 162, 172, 0.3);
+  color: var(--state-dated);
+}
+
+.row-flag.flag-watch {
+  border-color: rgba(210, 166, 63, 0.34);
+  color: var(--state-stale);
+}
+
+.row-flag.flag-avoid {
+  border-color: rgba(107, 120, 131, 0.4);
+  border-style: dashed;
+}
+
+.row-unscored {
+  background: rgba(162, 139, 196, 0.045);
+}
+
+.refused-mark {
+  display: inline-block;
+  border: 1px solid rgba(210, 166, 63, 0.38);
+  border-radius: 2px;
+  margin-left: 6px;
+  padding: 0 3px;
+  color: var(--state-stale);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* The gate clause as written. One line: it is the reference, while
+   `.setup-gate-reason` beneath it is the thing that happened, and the thing
+   that happened is allowed to wrap. */
+.setup-detail {
+  display: block;
+  margin: 2px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+/* ----------------------------------------------------------- the history -- */
+
+/* One judgment as it stood on a day: the set, its scenarios, the phase calls,
+   the setups. */
+.history-block {
+  margin-bottom: 12px;
+}
+
+/* Something /history cannot read, said rather than guessed at. */
+.history-unreadable {
+  margin: 8px 0 0;
+  max-width: 78ch;
+  color: var(--faint);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.history-unreadable code {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.history-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.history-controls .field {
+  margin-bottom: 0;
+  width: 17ch;
+}
+
+.history-controls .field input {
+  color-scheme: dark;
+}
+
+.history-hint {
+  flex-basis: 100%;
+  margin: 0;
+  max-width: 88ch;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+/* One date is one column, the full width of the panel.
+
+   `auto-fit` was laying a single as-at column into the first of three 380px
+   tracks, so every history table rendered into a third of the page: the setups
+   table needs about a thousand pixels for its four columns and had three
+   hundred and eighty, which is where Invalidation and R:R went. A diff is two
+   columns because there are two dates, not because a track happened to fit. */
+.diff-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.diff-grid.is-comparing {
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+}
+
+.diff-column-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* A field that differs between the two dates. Marked with the accent rather
+   than a direction colour: a probability that moved from 45 to 30 is a change
+   of mind, not a loss. */
+.diff-changed {
+  background: rgba(216, 199, 155, 0.08);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.diff-changed td:first-child {
+  color: var(--accent);
+}
+
+/* An amendment carries the event that triggered it. Never dropped: a
+   re-priced probability with no stated reason is the over-anchoring R2, R4,
+   R5, R6, R10, R11 and R12 were all written to stop. */
+.amendment {
+  /* Block, because it lives inside a table cell as a `span`: left inline it
+     overflows the cell and paints across the probability column beside it. */
+  display: block;
+  max-width: 68ch;
+  margin: 6px 0 0;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.amendment b {
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* The four columns of the setups table, at the width they are readable at.
+
+   A floor rather than a fixed width: below it the block scrolls sideways inside
+   its own border, which is the honest failure. Squeezing `7,470` and
+   `close below` into forty pixels is not. */
+.history-setups-table {
+  min-width: 700px;
+}
+
+/* The weeks one setup idea was carried across, as a strip: `W37 → W38 → W39`.
+
+   A re-proposed setup is a new row every week, and rendered flat the same trade
+   printed three times with the same levels. The strip says it is one idea; the
+   disclosure under it says what the older versions were written at. */
+.history-weeks {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.history-versions,
+.history-swings,
+.history-hidden {
+  margin: 6px 0 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.history-hidden {
+  margin: 0 0 12px;
+}
+
+.history-versions > summary,
+.history-swings > summary,
+.history-hidden > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.history-versions > summary:hover,
+.history-swings > summary:hover,
+.history-hidden > summary:hover {
+  color: var(--accent);
+}
+
+.history-versions ul,
+.history-swings ul,
+.history-hidden ul {
+  margin: 6px 0 0;
+  padding: 0 0 0 14px;
+  max-width: 88ch;
+}
+
+.history-versions li,
+.history-swings li,
+.history-hidden li {
+  margin-bottom: 4px;
+  line-height: 1.45;
+}
+
+.history-versions li span {
+  margin-left: 10px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-versions li b,
+.history-swings li b {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+/* A swing variable's two branches, each labelled with the one it is. */
+.history-swing-leg {
+  display: block;
+  margin-top: 2px;
+}
+
+.history-swing-leg i {
+  display: inline-block;
+  margin-right: 6px;
+  min-width: 10ch;
+  white-space: nowrap;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* A rule number that says where the rule is written. `R6` on its own is a
+   token the operator has no way to resolve from this page. */
+.rule-ref {
+  color: var(--accent);
+  font-family: var(--mono);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--line-strong);
+}
+
+.rule-ref:hover {
+  border-bottom-style: solid;
+}
+
+/* ------------------------------------------------------- the calibration -- */
+
+/* The finding, above the tiles that break it down. Five figures in five tiles
+   is a reading exercise; the sentence is what the page is for. */
+.calibration-lead {
+  margin: 0 0 12px;
+  max-width: 120ch;
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* A computed count in a section heading, where the finding belongs. */
+.calibration-title-note {
+  color: var(--faint);
+  font-weight: 500;
+  text-transform: none;
+}
+
+/* The two calls and the key miss, at the width prose needs, inside the row's
+   disclosure rather than wrapped into a ninety-pixel column. */
+.calibration-notes {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  max-width: 92ch;
+}
+
+.calibration-notes dt {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.calibration-notes dd {
+  margin: 2px 0 0;
+  color: var(--faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.ledger-table {
+  min-width: 940px;
+}
+
+.ledger-table col.c-open {
+  width: 5ch;
+}
+
+.ledger-table td.c-open {
+  text-align: right;
+}
+
+.ledger-table col.c-week {
+  width: 10ch;
+}
+.ledger-table col.c-scenario {
+  width: auto;
+}
+.ledger-table col.c-grade {
+  width: 13ch;
+}
+.ledger-table col.c-call {
+  width: 12ch;
+}
+.ledger-table col.c-targets {
+  width: 10ch;
+}
+.ledger-table col.c-brier {
+  width: 9ch;
+}
+
+.setup-ledger-table {
+  min-width: 860px;
+}
+
+.setup-ledger-table col.c-week {
+  width: 10ch;
+}
+.setup-ledger-table col.c-name {
+  width: auto;
+}
+.setup-ledger-table col.c-outcome {
+  width: 20ch;
+}
+.setup-ledger-table col.c-r {
+  width: 9ch;
+}
+
+/* A grade is a rating, not a direction. Materialized is not "up". The three
+   grades take the freshness vocabulary's neutral end so a scorecard cannot be
+   read as a P&L. */
+.grade-materialized {
+  border-color: rgba(99, 188, 138, 0.38);
+  background: rgba(99, 188, 138, 0.09);
+  color: var(--up);
+}
+
+.grade-partial {
+  border-color: rgba(210, 166, 63, 0.38);
+  background: rgba(210, 166, 63, 0.09);
+  color: var(--state-stale);
+}
+
+.grade-not {
+  border-color: rgba(152, 162, 172, 0.3);
+  background: rgba(152, 162, 172, 0.07);
+  color: var(--state-dated);
+}
+
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rule {
+  display: grid;
+  grid-template-columns: 5ch minmax(0, 1fr) minmax(0, 30ch);
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+/* A retired rule is kept and struck through, exactly as a void clause is.
+   Numbers are never reused, so R7 retired is still R7. */
+.rule.is-retired .rule-text {
+  color: var(--faint);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.rule-number {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.rule-text {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 12.5px;
+}
+
+/* The weeks that taught the rule, and how many times it has fired since. The
+   fire count is a real foreign key onto graded weeks, so the app can state it
+   rather than imply it. */
+.rule-weeks {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rule-fires {
+  color: var(--muted);
+}
+
+/* ------------------------------------------------- the remaining pieces -- */
+
+/* A small tag beside a label: the futures half of a pair, a manual condition,
+   a setup's sector-focus row. Borrowed wholesale from Accounting's residual
+   mark, because it is the same idea: a fact worth surfacing on a row without
+   giving it a row of its own. */
+.row-flag {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  margin-left: 6px;
+  padding: 0 3px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* A front-month future and its cash index are two rows, because every
+   condition, band and setup level names the cash one and a condition cannot
+   point at a value folded into another row's cell. They are bracketed rather
+   than merged: the separator between the pair is suppressed and the futures
+   half is dimmed, so the eye reads one instrument with two quotes instead of
+   two unrelated rows that happen to look alike. */
+.tbl tr.row-paired td {
+  border-bottom-color: transparent;
+  padding-bottom: 2px;
+}
+
+.tbl tr.row-future td:first-child {
+  color: var(--muted);
+  padding-left: 13px;
+}
+
+.snapshot-legend,
+.phase-legend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 12px 0 0;
+  max-width: 96ch;
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.phase-legend {
+  grid-column: 1 / -1;
+}
+
+/* A permanent gap's recoverability, on the row that has one. Amber, because a
+   day that cannot be recovered is a caution rather than a fault: nothing is
+   broken, the reading simply does not exist and never will. */
+.gap-reason {
+  display: block;
+  margin-top: 2px;
+  color: var(--state-stale);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.cond-list {
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+}
+
+/* The swing variables, each with its cool leg and its hot leg. Two-sided is a
+   requirement rather than a stylistic preference, per R2, so the two legs are
+   drawn with equal weight and neither is given a direction colour. */
+.swing-list {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.swing-list li {
+  margin-bottom: 6px;
+}
+
+.swing-list b {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.swing-leg {
+  display: block;
+  margin-top: 2px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+  font-size: 11.5px;
+}
+
+.swing-leg i {
+  display: inline-block;
+  width: 10ch;
+  white-space: nowrap;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The probability check is a paragraph that walks R1 to R12 against the table.
+   Collapsed by default because it is read once a week and the three scenarios
+   under it are read twice a day. */
+.probability-check summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.probability-check summary:hover {
+  color: var(--ink);
+}
+
+.probability-check p {
+  margin: 8px 0 0;
+  max-width: 96ch;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* The book a setup or a graded row belongs to, at label weight rather than as
+   a column: two books, never more, so a column would be four characters of
+   width spent on a binary. */
+.setup-asset {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Why a gate refused, under the clause it refused against. Amber: a gate doing
+   its job is a decision, not a fault. */
+.setup-gate-reason {
+  display: block;
+  margin-top: 3px;
+  color: var(--state-stale);
+  font-family: var(--sans);
+  font-size: 11px;
+}
+
+.key-miss {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 11px;
+}
+
+/* The mandate band and the band the book is actually operated at are two
+   statements. A book run at 60-70% inside a 50-110% mandate is not a book run
+   at 110%, and collapsing them would report it as one. */
+.exposure-operated {
+  margin: 0 0 10px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.exposure-operated b {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.focus-list {
+  margin: 0 0 12px;
+}
+
+.focus-row {
+  display: grid;
+  grid-template-columns: 11ch minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(37, 45, 53, 0.7);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.focus-row:last-child {
+  border-bottom: none;
+}
+
+/* The four sector-focus bands. An ordinal scale of conviction, not a direction:
+   AVOID is not a short and CRITICAL is not a winner, so the ramp runs through
+   the accent and the urgency tokens rather than through green and red. */
+.chip.focus-critical {
+  border-color: rgba(216, 199, 155, 0.4);
+  background: rgba(216, 199, 155, 0.08);
+  color: var(--accent);
+}
+
+.chip.focus-hold {
+  border-color: rgba(152, 162, 172, 0.3);
+  background: rgba(152, 162, 172, 0.07);
+  color: var(--state-dated);
+}
+
+.chip.focus-watch {
+  border-color: rgba(210, 166, 63, 0.34);
+  background: rgba(210, 166, 63, 0.07);
+  color: var(--state-stale);
+}
+
+.chip.focus-avoid {
+  border-color: rgba(107, 120, 131, 0.4);
+  border-style: dashed;
+  background: transparent;
+  color: var(--faint);
+}
+
+/* A holding no sector-focus row supports. A macro_quality finding rather than a
+   constraint, because holdings are re-parsed daily and the strategy is authored
+   weekly, so it is marked rather than refused. */
+/* No holdings check on record. Named rather than left blank: an empty table
+   and an absent one are different claims, and only one of them is a finding. */
+.holdings-empty {
+  margin: 0;
+  max-width: 78ch;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.unsupported {
+  color: var(--state-stale);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* ---------------------------------------------------------- narrow widths -- */
+
+@media (max-width: 720px) {
+  .shell-main {
+    padding: 12px 12px 32px;
+  }
+
+  .panel-body {
+    padding: 12px;
+  }
+
+  .ledger {
+    grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+  }
+
+  .ledger-cell > strong {
+    font-size: 18px;
+  }
+
+  .cond-row {
+    grid-template-columns: 11ch minmax(0, 1fr);
+  }
+
+  .cond-current {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .band-row {
+    grid-template-columns: minmax(0, 1fr) 12ch;
+    row-gap: 4px;
+  }
+
+  .band,
+  .band-bounds {
+    grid-column: 1 / -1;
+  }
+
+  .rule {
+    grid-template-columns: 5ch minmax(0, 1fr);
+  }
+
+  .rule-weeks {
+    grid-column: 2;
+    text-align: left;
+  }
+}
+
+/* ------------------------------------------------------------------ desk -- */
+/* The call held against today's tape: drift, the Refresh control, a proposal
+   awaiting the operator, and the two lists that say what is closest to moving
+   and what settles next. Same surfaces and tokens as the ledger above it. */
+
+.desk {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+
+.desk-k {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.desk-drift {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  padding: 12px 14px;
+}
+
+.desk-drift-warn {
+  border-color: rgba(210, 166, 63, 0.45);
+  background: rgba(210, 166, 63, 0.06);
+}
+
+.desk-drift-calm {
+  border-color: var(--line);
+}
+
+.desk-drift-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.desk-drift-score {
+  display: grid;
+  gap: 2px;
+  min-width: 64px;
+}
+
+.desk-drift-score strong {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.desk-drift-warn .desk-drift-score strong {
+  color: var(--state-stale);
+}
+
+.desk-drift-text {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  min-width: 0;
+}
+
+.desk-drift-text p {
+  margin: 0;
+}
+
+.desk-drift-items {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.desk-drift-items li {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.desk-refresh {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  max-width: 280px;
+  text-align: right;
+}
+
+.desk-refresh-form {
+  display: grid;
+  gap: 6px;
+  width: min(380px, 100%);
+}
+
+.desk-refresh-form label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.desk-refresh-form textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.desk-refresh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.desk-refused {
+  color: var(--state-failed);
+}
+
+.button-accent {
+  padding: 4px 11px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.button-accent:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.desk-proposal {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid rgba(162, 139, 196, 0.45);
+  border-radius: 8px;
+  background: rgba(162, 139, 196, 0.06);
+}
+
+.desk-proposal p {
+  margin: 0;
+}
+
+.desk-proposal-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.desk-proposal-rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.desk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.desk-card {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+
+.desk-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.desk-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.desk-list li:last-child {
+  border-bottom: 0;
+}
+
+.desk-list b {
+  font-weight: 500;
+}
+
+.desk-why {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.desk-when {
+  display: block;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.desk-card-foot {
+  margin: 8px 0 0;
+  color: var(--faint);
+  font-size: 11.5px;
+}
+
+.desk-link {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.desk-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 860px) {
+  .desk-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .desk-drift-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .desk-refresh {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+/* ---------------------------------------------------------------- movers -- */
+
+.movers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 12px 0 4px;
+}
+
+.movers-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mover {
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.mover span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.mover-loud {
+  border-color: rgba(210, 166, 63, 0.45);
+}
+
+.mover-loud span {
+  color: var(--state-stale);
+}
+
+.row-targeted > td {
+  background: rgba(216, 199, 155, 0.07);
+}
+
+/* ------------------------------------------------------------- catalysts -- */
+
+.catalysts-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .catalysts-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cal-list,
+.risk-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cal-row {
+  display: grid;
+  grid-template-columns: 92px 70px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cal-past {
+  opacity: 0.55;
+}
+
+.cal-day {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.cal-time {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.cal-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cal-name a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.cal-name a:hover {
+  color: var(--accent);
+}
+
+.risk-list li {
+  display: grid;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.risk-list p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.risk-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.risk-head > .chip {
+  flex: none;
+}
+
+/* Where the three feeds come from, said once above them. */
+.cal-provenance {
+  margin: 0 0 12px;
+}
+
+/* The eight kinds of catalyst, one hue each, used by the row badge and the
+   filter chip's dot. Muted to sit beside the state chips, never louder. */
+.cal-kind-macro {
+  --kind: var(--kind-macro);
+}
+
+.cal-kind-central-banks {
+  --kind: var(--kind-central-banks);
+}
+
+.cal-kind-earnings {
+  --kind: var(--kind-earnings);
+}
+
+.cal-kind-market-events {
+  --kind: var(--kind-market-events);
+}
+
+.cal-kind-tech {
+  --kind: var(--kind-tech);
+}
+
+.cal-kind-policy {
+  --kind: var(--kind-policy);
+}
+
+.cal-kind-investor {
+  --kind: var(--kind-investor);
+}
+
+.cal-kind-crypto {
+  --kind: var(--kind-crypto);
+}
+
+.cal-kind-other {
+  --kind: var(--kind-other);
+}
+
+.cal-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.cal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.cal-chip b {
+  color: var(--faint);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-chip:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.cal-chip[aria-pressed="true"] {
+  border-color: rgba(216, 199, 155, 0.4);
+  background: rgba(216, 199, 155, 0.07);
+  color: var(--accent);
+}
+
+.cal-chip[aria-pressed="true"] b {
+  color: var(--accent);
+}
+
+.cal-chip:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.cal-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--kind);
+}
+
+.cal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+.cal-kind {
+  flex: none;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--kind) 40%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--kind) 9%, transparent);
+  color: var(--kind);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 15px;
+  white-space: nowrap;
+}
+
+/* An estimated date says so in the time column, in the stale hue: a guess is
+   not a schedule, and it should not read like one. */
+.cal-est {
+  color: var(--state-stale);
+  cursor: help;
+}
+
+.risk-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  align-items: baseline;
+  font-size: 11px;
+}
+
+.source-link {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.source-link:hover {
+  color: var(--accent);
+}
+
+/* An address that is not http or https, shown as text and never linked. It
+   can be any length, so it wraps rather than widening the page. */
+.source-link-plain {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.source-link-plain:hover {
+  color: var(--faint);
+}
+
+.risk-head .source-link {
+  margin-left: auto;
+}
+
+/* A tail risk's escalation trail, from its check history: one small mono line
+   under the name, each level in its own severity colour. */
+.risk-trail {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.risk-list p.risk-trail {
+  font-size: 10px;
+}
+
+.risk-trail-arrow {
+  color: var(--line-strong);
+}
+
+.risk-sev-acute {
+  color: var(--state-failed);
+}
+
+.risk-sev-elevated {
+  color: var(--state-stale);
+}
+
+.risk-sev-watch {
+  color: var(--state-dated);
+}
+
+/* Where each of the three feeds last came from, one line above everything.
+   A late or failed feed takes the stale colour; the detail is on hover. */
+.feed-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 18px;
+  margin: 0 0 6px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-item {
+  cursor: help;
+  white-space: nowrap;
+}
+
+/* Words a screen reader needs and a sighted reader already has from the
+   layout or the colour: a line's label, a stale feed's detail. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+.feed-item b {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.feed-stale,
+.feed-stale b {
+  color: var(--state-stale);
+}
+
+/* ------------------------------------------------------- your holdings -- */
+
+.hold-note {
+  margin: 0 0 6px;
+  font-size: 11px;
+}
+
+.hold-list,
+.hold-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hold-row {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Full width under the calendar, so two columns of holdings on a desktop. */
+@media (min-width: 961px) {
+  .hold-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 28px;
+  }
+}
+
+.hold-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+.hold-symbol {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hold-name {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Where a name comes from: Accounting's book, the manual list, or watched but
+   not held. Quieter than a state chip: it is a label, not a verdict. */
+.hold-src {
+  flex: none;
+  align-self: center;
+  padding: 0 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  line-height: 15px;
+  white-space: nowrap;
+}
+
+.hold-src-accounting {
+  border-color: color-mix(in srgb, var(--state-dated) 35%, transparent);
+  color: var(--state-dated);
+}
+
+.hold-src-manual {
+  border-color: color-mix(in srgb, var(--state-unrated) 45%, transparent);
+  color: var(--state-unrated);
+}
+
+.hold-src-watch {
+  border-style: dashed;
+}
+
+.hold-head > .chip {
+  flex: none;
+  align-self: center;
+  padding: 0 6px;
+  line-height: 15px;
+}
+
+.hold-move {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-left: auto;
+  cursor: help;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hold-move small {
+  font-size: 10px;
+}
+
+.hold-driver,
+.hold-quiet {
+  margin: 0;
+  font-size: 13px;
+}
+
+.hold-driver .source-link {
+  margin-left: 4px;
+}
+
+/* A material move the desk looked into and could not explain. Said first,
+   in the quiet colour, so it never reads as a sourced driver. */
+.hold-no-reason {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.hold-quiet {
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.hold-events {
+  display: grid;
+  gap: 1px;
+  margin-top: 1px;
+}
+
+.hold-events li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  font-size: 12px;
+}
+
+.hold-event-day {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hold-event-est {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.hold-event-name {
+  min-width: 0;
+  color: var(--muted);
+}
+
+.hold-event-name:hover {
+  color: var(--accent);
+}
+
+.hold-event-kind {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* The two lists the operator edits, tucked away: most mornings nobody opens
+   it, and Accounting's positions need no editing at all. */
+.hold-manage {
+  margin-top: 8px;
+}
+
+.hold-manage > summary {
+  width: max-content;
+  cursor: pointer;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hold-manage > summary:hover {
+  color: var(--accent);
+}
+
+.hold-manage-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.hold-manage-body > p {
+  margin: 0;
+}
+
+.hold-manage-list {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.hold-manage-list h4 {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hold-manage-list > p {
+  margin: 0;
+}
+
+.hold-manage-list ul {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hold-manage-row {
+  display: grid;
+  gap: 4px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.hold-manage-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.hold-manage-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.hold-manage-note {
+  margin: 0;
+}
+
+.hold-manage-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.hold-manage-inline input {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.hold-manage-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 10px;
+  width: 100%;
+}
+
+.hold-manage-form .field {
+  margin-bottom: 8px;
+}
+
+.hold-manage-wide {
+  grid-column: 1 / -1;
+}
+
+.hold-manage-form > p {
+  margin: 0 0 8px;
+}
+
+/* ---------------------------------------------------------- phone width -- */
+/* Below 760px a three-column scenario table scrolled sideways inside the
+   screen, cut every trigger at the edge, and stood as tall as its thirteen
+   targets. Each scenario stacks instead: the call, its trigger, its targets.
+   The holdings check does the same for its note, which was squeezed to 90px. */
+@media (max-width: 760px) {
+  .scenario-table {
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .scenario-table colgroup,
+  .scenario-table thead {
+    display: none;
+  }
+
+  .scenario-table,
+  .scenario-table tbody,
+  .scenario-table tr,
+  .scenario-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .scenario-table td + td {
+    padding-top: 0;
+  }
+
+  /* A compact target keeps its one line: the 720px rule written for the full
+     band rows put the bounds on a row of their own and stretched the state
+     chip across the cell, which lost the label entirely. */
+  .band-row.is-compact {
+    grid-template-columns: minmax(0, 1fr) auto auto 5.5ch;
+    row-gap: 0;
+  }
+
+  .band-row.is-compact .band-bounds {
+    grid-column: auto;
+  }
+
+  /* The evidence table keeps what a phone reader scans for: the series, its
+     value, its move and its date. Since-read, next print and the trend are
+     one tap away in the row's own disclosure. At 760px wide it cut every
+     figure mid-number at the screen edge. */
+  .snapshot-table {
+    min-width: 0;
+  }
+
+  .snapshot-table .c-since,
+  .snapshot-table .c-asof,
+  .snapshot-table .c-next,
+  .snapshot-table .c-trend {
+    display: none;
+  }
+
+  .snapshot-table col.c-value,
+  .snapshot-table col.c-delta {
+    width: 11ch;
+  }
+
+  /* A hidden cell's <col> still reserves its width, so the columns go too.
+     After the c-delta rule, because the since-read column is both. */
+  .snapshot-table col.c-since,
+  .snapshot-table col.c-asof,
+  .snapshot-table col.c-next,
+  .snapshot-table col.c-trend {
+    width: 0;
+  }
+
+  /* Names and values wrap at their spaces on a phone, never inside a figure:
+     `Median +0.0050%/8h` held the value column at 161px on one line. */
+  .tbl .snapshot-table td,
+  .tbl .snapshot-table th,
+  .snapshot-table .paired-cash {
+    white-space: normal;
+  }
+
+  /* The three ledgers: each row wraps into a block, the week and its sentence
+     first, the chips and figures after, rather than scrolling sideways with
+     the grade and the Brier out of sight. */
+  .ledger-table,
+  .setup-ledger-table,
+  .history-setups-table {
+    min-width: 0;
+  }
+
+  .ledger-table colgroup,
+  .ledger-table thead,
+  .setup-ledger-table colgroup,
+  .setup-ledger-table thead,
+  .history-setups-table colgroup,
+  .history-setups-table thead {
+    display: none;
+  }
+
+  .ledger-table tr,
+  .setup-ledger-table tr,
+  .history-setups-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ledger-table td,
+  .setup-ledger-table td,
+  .history-setups-table td {
+    display: block;
+    border-bottom: none;
+    white-space: normal;
+  }
+
+  .ledger-table td:nth-child(2),
+  .setup-ledger-table td:nth-child(2),
+  .history-setups-table td:first-child,
+  .ledger-table td[colspan],
+  .setup-ledger-table td[colspan],
+  .history-setups-table td[colspan] {
+    flex-basis: 100%;
+    order: -1;
+  }
+
+  .ledger-table td:first-child,
+  .setup-ledger-table td:first-child {
+    order: -2;
+  }
+
+  .tbl .ledger-table td,
+  .tbl .setup-ledger-table td,
+  .tbl .history-setups-table td {
+    padding: 2px 13px;
+  }
+
+  /* Headers are gone at this width, so a figure names its own column. */
+  .ledger-table td[data-label]::before,
+  .setup-ledger-table td[data-label]::before {
+    content: attr(data-label) " ";
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* The calendar gives the event its width: day and time share a line above
+     it rather than holding 150px of every row in two columns. */
+  .cal-row {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    row-gap: 2px;
+  }
+
+  .cal-row > .cal-name {
+    grid-column: 1 / -1;
+  }
+
+  .cal-row > span:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .cal-row > .cal-day:empty {
+    display: none;
+  }
+
+  .holdings-table thead {
+    display: none;
+  }
+
+  .holdings-table tr {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    column-gap: 10px;
+    align-items: center;
+  }
+
+  .holdings-table td:last-child {
+    grid-column: 1 / -1;
+    padding-top: 0;
+  }
+}
+
+/* ------------------------------------------------------------ glossary -- */
+
+/* A term the page keeps, explained in place. The dotted underline is the only
+   mark on it: the label keeps its own colour and size, so a table of explained
+   terms reads the same as one without them. */
+.gloss {
+  display: inline;
+}
+
+.gloss-term {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dotted var(--faint);
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  cursor: help;
+}
+
+.gloss-term:hover {
+  border-bottom-color: var(--muted);
+}
+
+/* Fixed, and placed from the term's own rectangle by the component, so a
+   scrolling table cannot clip it and it never widens the page. */
+.gloss-pop {
+  position: fixed;
+  z-index: 120;
+  width: min(288px, calc(100vw - 16px));
+  padding: 7px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface-2);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 45%);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+}
+
+.gloss-pop[hidden] {
+  display: none;
+}
+
+.gloss-head {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--ink);
+  font-weight: 600;
+}

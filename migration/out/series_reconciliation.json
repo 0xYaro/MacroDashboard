@@ -1,0 +1,208 @@
+{
+  "journal_labels_per_key": {
+    "alt_season_index": [
+      "Alt season index"
+    ],
+    "breadth_spx_above_200dma": [
+      "% S&P above 200dma"
+    ],
+    "brent": [
+      "Brent Crude (BZ=F)"
+    ],
+    "btc": [
+      "BTC"
+    ],
+    "btc_dominance": [
+      "BTC Dominance"
+    ],
+    "btc_etf_inflow_streak": [
+      "BTC ETF inflow streak"
+    ],
+    "btc_etf_weekly_flow": [
+      "BTC ETF weekly flow"
+    ],
+    "cftc_asset_managers_es": [
+      "CFTC Asset Managers, ES net futures"
+    ],
+    "cftc_leveraged_funds_es": [
+      "CFTC Leveraged Funds, ES net futures"
+    ],
+    "cnn_fear_greed": [
+      "CNN Equities F&G"
+    ],
+    "crypto_fear_greed": [
+      "Crypto F&G (Alt.me)"
+    ],
+    "crypto_open_interest": [
+      "Total Crypto OI"
+    ],
+    "defi_tvl": [
+      "Total DeFi TVL"
+    ],
+    "dow_cash": [
+      "Dow Jones (YM=F) (cash)",
+      "Dow Jones (YM=F) (cash, prior week)"
+    ],
+    "dow_front": [
+      "Dow Jones (YM=F)"
+    ],
+    "dxy": [
+      "US Dollar (DXY proxy)",
+      "US Dollar (DXY)"
+    ],
+    "eth": [
+      "ETH"
+    ],
+    "eth_etf_inflow_streak": [
+      "ETH ETF inflow streak"
+    ],
+    "eth_etf_weekly_flow": [
+      "ETH ETF weekly flow"
+    ],
+    "fed_funds": [
+      "Fed funds"
+    ],
+    "fedwatch_next_fomc": [
+      "CME FedWatch (Sep 16)",
+      "CME FedWatch",
+      "CME FedWatch (next FOMC)"
+    ],
+    "funding_extremes": [
+      "Funding extremes"
+    ],
+    "funding_skew": [
+      "Funding skew"
+    ],
+    "geopolitical_state": [
+      "War / geopolitical state"
+    ],
+    "gold": [
+      "Gold (GC=F)"
+    ],
+    "hy_oas_bps": [
+      "HY credit spread (OAS)"
+    ],
+    "ig_oas_bps": [
+      "IG credit spread (OAS)"
+    ],
+    "liquidations_24h": [
+      "24h Liquidations"
+    ],
+    "move": [
+      "MOVE index"
+    ],
+    "nasdaq_cash": [
+      "Nasdaq Composite (cash)"
+    ],
+    "net_liquidity": [
+      "Net liquidity (Fed BS − TGA − RRP)"
+    ],
+    "next_fomc": [
+      "Next FOMC"
+    ],
+    "rut_cash": [
+      "Russell 2000 (RTY=F) (cash)",
+      "Russell 2000 (RTY=F) (cash, prior week)"
+    ],
+    "rut_front": [
+      "Russell 2000 (RTY=F)"
+    ],
+    "silver": [
+      "Silver (SI=F)"
+    ],
+    "sol": [
+      "SOL"
+    ],
+    "spx_cash": [
+      "S&P 500 (ES=F) (cash)",
+      "S&P 500 (ES=F) (cash, prior week)"
+    ],
+    "spx_front": [
+      "S&P 500 (ES=F)"
+    ],
+    "stablecoin_mcap": [
+      "Stablecoin Market Cap"
+    ],
+    "state_street_equity_allocation": [
+      "State Street institutional equity allocation"
+    ],
+    "state_street_risk_appetite": [
+      "State Street institutional equity allocation (Risk Appetite Index)"
+    ],
+    "tariff_state": [
+      "Active tariff policy",
+      "Tariff posture"
+    ],
+    "ust_10y": [
+      "10Y Treasury Yield"
+    ],
+    "ust_2y": [
+      "2Y Treasury Yield"
+    ],
+    "ust_30y": [
+      "30Y Treasury Yield"
+    ],
+    "vix": [
+      "VIX"
+    ],
+    "wti": [
+      "WTI Crude (CL=F)"
+    ]
+  },
+  "journal_rows_not_imported": {
+    "7-day Liquidations": "config/series.yaml carries liquidations_24h only; the journal dropped the row after 2026-W36.",
+    "Alt OI (excl. BTC/ETH)": "config/series.yaml carries crypto_open_interest only; the journal dropped the row after 2026-W36.",
+    "Coinbase Premium / CME basis": "config/series.yaml carries no key for it; the journal dropped the row after 2026-W35.",
+    "NAAIM Exposure": "config/series.yaml carries no NAAIM series; the journal dropped the row after 2026-W32 and the ledger records that NAAIM went dark mid-arc."
+  },
+  "keys_referenced_by_a_scenario_target": [
+    "breadth_spx_above_200dma",
+    "brent",
+    "btc",
+    "btc_etf_weekly_flow",
+    "eth",
+    "gold",
+    "hy_oas_bps",
+    "nasdaq_cash",
+    "rut_cash",
+    "spx_cash",
+    "ust_10y",
+    "ust_2y",
+    "ust_30y",
+    "vix"
+  ],
+  "keys_this_seed_references_that_series_yaml_lacks": [],
+  "keys_with_migrated_observations": 47,
+  "series_yaml": "config/series.yaml",
+  "series_yaml_keys": 74,
+  "series_yaml_keys_with_no_migrated_observation": [
+    "auction_bid_to_cover_10y",
+    "auction_bid_to_cover_20y",
+    "auction_bid_to_cover_2y",
+    "auction_bid_to_cover_30y",
+    "auction_bid_to_cover_3y",
+    "auction_bid_to_cover_5y",
+    "auction_bid_to_cover_7y",
+    "auction_high_yield_10y",
+    "auction_high_yield_20y",
+    "auction_high_yield_2y",
+    "auction_high_yield_30y",
+    "auction_high_yield_3y",
+    "auction_high_yield_5y",
+    "auction_high_yield_7y",
+    "btc_50w_ma",
+    "cpi_core_mom",
+    "cpi_headline_mom",
+    "fedwatch_hike_prob_next",
+    "ism_manufacturing",
+    "ism_services",
+    "jolts_openings",
+    "payrolls_change",
+    "pce_core_mom",
+    "pce_headline_mom",
+    "retail_control_mom",
+    "retail_sales_mom",
+    "unemployment_rate"
+  ],
+  "series_yaml_present": true
+}

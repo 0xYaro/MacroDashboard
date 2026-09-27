@@ -1,0 +1,6 @@
+# Tool caches. The repository root ignores __pycache__ and .venv; these are the
+# ones uv, ruff, mypy and pytest add inside the project.
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/

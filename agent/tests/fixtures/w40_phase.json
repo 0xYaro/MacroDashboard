@@ -1,0 +1,127 @@
+{
+  "week": "2026-W40",
+  "phase_calls": [
+    {
+      "asset": "equities",
+      "phase": 3,
+      "phase_name": "Late Cycle / Distribution",
+      "stage": "late",
+      "stage_reason": "Late, not mid. For six weeks in a row, the share of stocks above their 200-day average fell, from 72% to under 50%. The gains now come from one trade, not a whole sector. Big investors have cut their stock holdings three weeks running.",
+      "reason": "The index is near its highs, but fewer stocks are doing the lifting. Under 50% of S&P 500 stocks are above their 200-day average, while the index sits above its rising one. The gains come from memory chips and AI infrastructure. Junk bonds and the VIX both look calm. Prices rising on a shrinking base, with no fear priced in, is the framework's Distribution phase.",
+      "evidence": [
+        "For a second week, under 50% of S&P 500 stocks were above their 200-day average, while the index ended flat. That is the Stage 3 pattern: an index held up by fewer and fewer stocks.",
+        "Memory chips and AI infrastructure kept leading ahead of Micron's Sep 30 results. The Dow fell, and the average stock lagged the index.",
+        "Junk bonds paid 270 basis points over Treasuries, and the VIX stayed under 15. Neither bond nor stock markets are pricing a downturn, which rules out Stage 4 on this data."
+      ],
+      "falsifier": "An S&P 500 close below its 200-day average, with under 45% of stocks above theirs and junk bonds over 300 basis points, means Contraction. Over 60% of stocks back above theirs, with small caps rising too, means Expansion. Either breaks two of the four conditions below.",
+      "conditions": [
+        {
+          "ordinal": 1,
+          "text": "The S&P 500 stays above its 200-day average, so the index has not broken down",
+          "kind": "expr",
+          "expr": {
+            "op": "gt",
+            "series": "spx_cash",
+            "field": "dma200_pct",
+            "value": 0
+          }
+        },
+        {
+          "ordinal": 2,
+          "text": "Under 60% of S&P 500 stocks sit above their 200-day average, so the rise is not broad",
+          "kind": "expr",
+          "expr": {
+            "op": "lt",
+            "series": "breadth_spx_above_200dma",
+            "value": 60
+          }
+        },
+        {
+          "ordinal": 3,
+          "text": "Junk bonds pay under 300 basis points over Treasuries, so lenders see no downturn",
+          "kind": "expr",
+          "expr": {
+            "op": "lt",
+            "series": "hy_oas_bps",
+            "value": 300
+          }
+        },
+        {
+          "ordinal": 4,
+          "text": "The VIX stays under 22 and the MOVE bond gauge under 90, so markets expect no downturn",
+          "kind": "expr",
+          "expr": {
+            "all": [
+              {
+                "op": "lt",
+                "series": "vix",
+                "value": 22
+              },
+              {
+                "op": "lt",
+                "series": "move",
+                "value": 90
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "asset": "crypto",
+      "phase": 1,
+      "phase_name": "Early Bull",
+      "stage": "late",
+      "stage_reason": "Late in Phase 1, not mid. BTC has broken above the price that turned it back twice, and the mood is at its high for this run. What it lacks for Wealth Creation is steady money flowing into funds.",
+      "reason": "BTC is well above its 50-week average. Good news lifts it, bad news no longer pushes it lower, and buyers step in on dips within days. That is Early Bull. It is not yet Wealth Creation. The jump came from traders who bet on a fall being forced to buy back, not from new money. BTC ETFs took in +$6.2M for the week. Eight bets on a fall were closed out for every bet on a rise.",
+      "evidence": [
+        "BTC held at $76K, and buyers reversed the quick drop below $75K within three trading days.",
+        "The crypto Fear & Greed index reached 70, its high for this run. Open interest is rebuilding, and funding rates are flat, not overheated.",
+        "BTC ETFs took in +$6.2M for the week, and ETH ETFs saw -$140.6M. Steady fund inflows are not yet driving the move."
+      ],
+      "falsifier": "A close back under $74,000, with Fear & Greed back in fear, would mean Wealth Destruction or Lull. A week of ETF inflows above +$500M, with BTC holding over $82K, would mean Wealth Creation.",
+      "conditions": [
+        {
+          "ordinal": 1,
+          "text": "BTC stays above its 50-week average, which was $59,200 at the 2026-09-25 close",
+          "kind": "expr",
+          "expr": {
+            "op": "gt",
+            "series": "btc",
+            "value": 59200
+          }
+        },
+        {
+          "ordinal": 2,
+          "text": "BTC stays above $74,000, the price where buyers have stepped in on dips",
+          "kind": "expr",
+          "expr": {
+            "op": "gt",
+            "series": "btc",
+            "value": 74000
+          }
+        },
+        {
+          "ordinal": 3,
+          "text": "The crypto Fear & Greed index stays at 40 or above, so doubt keeps fading instead of turning to fear",
+          "kind": "expr",
+          "expr": {
+            "op": "gte",
+            "series": "crypto_fear_greed",
+            "value": 40
+          }
+        },
+        {
+          "ordinal": 4,
+          "text": "No steady ETF selling: weekly BTC ETF flows stay above -$500M",
+          "kind": "expr",
+          "expr": {
+            "op": "gt",
+            "series": "btc_etf_weekly_flow",
+            "value": -500000000
+          }
+        }
+      ]
+    }
+  ]
+}

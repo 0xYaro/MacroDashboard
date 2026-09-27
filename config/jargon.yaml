@@ -1,0 +1,168 @@
+# Trader jargon the reader-facing text should not use, and what to say instead.
+#
+# One list, two readers. `config/voice.md` renders it as the jargon table the
+# Monday run reads before writing, and `agent/src/macro_agent/voice.py` reads
+# it to warn when a proposal still uses a term. A test asserts every `term`
+# here appears in voice.md, so the two cannot drift.
+#
+# Fields:
+#   term            what the warning names, and what voice.md's table lists
+#   plain           the plain replacement the warning suggests
+#   note            optional: when the term is fine, or how to keep it
+#   match           optional: a regex (case-insensitive) when the bare word
+#                   would catch ordinary English; defaults to the term itself
+#                   on word boundaries
+#   case_sensitive  optional: true when the lower-case spelling is a normal
+#                   word or a month ("SEP" is not "Sep 30")
+#
+# Terms that must stay (VIX, Fed, PCE, CPI, S&P 500, basis points) are not
+# here: they are explained on first use or left to the page's glossary.
+
+terms:
+  - term: tape
+    plain: the market, prices
+  - term: breadth
+    plain: the share of S&P 500 stocks above their 200-day average
+    note: say how many stocks are rising, not "breadth"
+  - term: duration
+    plain: long-term bonds
+  - term: high-beta
+    plain: the most volatile stocks
+  - term: beta
+    plain: how much something swings with the market
+  - term: transmits
+    plain: reaches, starts to hurt
+    match: '\btransmi(?:t|ts|tted|tting|ssion)\b'
+  - term: prints
+    plain: comes out, is reported (a "print" is a data release)
+    match: '\bprint(?:s|ed|ing)?\b'
+  - term: leg
+    plain: part, signal, holding
+    match: '\blegs?\b'
+  - term: 200dma
+    plain: 200-day average price
+    match: '\b200-?dma\b'
+  - term: bid-to-cover
+    plain: how many dollars were bid for each dollar of bonds sold
+  - term: OAS
+    plain: the extra yield over Treasuries
+    case_sensitive: true
+  - term: spreads
+    plain: the extra yield riskier borrowers pay over the government
+    note: the credit sense; the verb ("spreads to") is fine
+    match: '\b(?:credit|hy|ig|oas|junk[- ]bond|corporate|bond|yield)\s+spreads?\b|\bspreads\b(?!\s+(?:to|through|into)\b)'
+  - term: HY
+    plain: junk bonds (high-yield)
+    case_sensitive: true
+  - term: IG
+    plain: investment-grade (safer) company bonds
+    case_sensitive: true
+  - term: risk complex
+    plain: stocks, junk bonds and other risky assets
+  - term: carry
+    plain: hold up, lift
+    note: as in "memory carries the index"
+    match: '\bcarr(?:y|ies)\b'
+  - term: add
+    plain: buy more, extra buying
+    note: the noun ("no add", "the crypto add") and "adds"; the verb in plain use is fine
+    match: '\b(?:an?|the|no|any)\s+(?:[a-z-]+\s+)?adds?\b|\badds\b'
+  - term: floor of the band
+    plain: the low end of the target range
+  - term: band
+    plain: range, target range
+    match: '\bbands?\b'
+  - term: cluster clears
+    plain: the auctions go smoothly
+    match: '\bcluster\s+clears\b'
+  - term: cluster
+    plain: the group of auctions, the week's auctions
+    note: the auction sense ("the 3Y/10Y/30Y cluster", "the auction cluster"); "a cluster of lawmakers" is fine
+    match: '\b(?:auctions?|supply|refunding|coupon|treasury|\d+y(?:/\d+y)+)\s+clusters?\b|\bclusters?\s+of\s+(?:auctions|supply|treasur(?:y|ies)|bonds?)\b'
+  - term: tailing
+    plain: selling at a higher yield than expected (weak demand)
+  - term: tail
+    plain: a weak auction, one that sold at a higher yield than expected
+    note: the auction sense ("a record tail", "tailed by 2bp"); not "tail risk", which the page explains, nor "the tail end"
+    match: '\b(?:record|second|big|large|small|wide|ugly|\d+(?:\.\d+)?\s?bps?)\s+tails?\b|\btail(?:s|ed)?\s+(?:by|of)\s+\d|\bauctions?\s+(?:\w+\s+){0,3}?tail(?:s|ed)?\b'
+  - term: SEP
+    plain: the Fed's own forecasts
+    case_sensitive: true
+  - term: dot plot
+    plain: Fed officials' rate forecasts
+    match: '\bdots?(?:\s+plot)?\b'
+  - term: reflexive
+    plain: automatic, by habit
+  - term: capex
+    plain: spending on buildings and equipment
+  - term: dovish
+    plain: leaning toward lower rates
+  - term: hawkish
+    plain: leaning toward higher rates
+  - term: risk-on
+    plain: investors buying riskier assets
+    match: '\brisk[- ]on\b'
+  - term: risk-off
+    plain: investors selling riskier assets
+    match: '\brisk[- ]off\b'
+  - term: bid
+    plain: buyers, demand
+    note: the noun ("a bid under long bonds", "no bid"); a takeover bid is fine
+    match: '\b(?:a|the|strong|firm|steady|haven|safe-haven)\s+bid\s+(?:under|for|in|into|returned|faded)\b|\bno\s+bid\b|\bbid\s+under\b'
+  - term: offer
+    plain: sellers, supply
+    match: '\boffers?\b'
+  - term: rip
+    plain: sharp rise
+    match: '\brips?\b'
+  - term: chop
+    plain: prices going sideways
+    match: '\bchop(?:py)?\b'
+  - term: squeeze
+    plain: a jump forced by traders buying back bets against it
+  - term: positioning
+    plain: what to do, how to hold
+  - term: drawdown
+    plain: fall from the peak
+    match: '\bdrawdowns?\b'
+  - term: internals
+    plain: what most stocks are doing underneath the index
+  - term: composition
+    plain: which stocks are driving the index
+  - term: run low
+    plain: the lowest level in this stretch
+  - term: coin flip
+    plain: about even odds
+  - term: clears
+    plain: passes, rises above
+    note: a price getting past a level ("clears 76,000", "cleared resistance"); "cleared by regulators" and "clears the way" are fine
+    match: '\bclear(?:s|ed|ing)?\s+(?:\$?\d|resistance\b|support\b|(?:the|its|a)\s+(?:\d+-day\s+)?(?:high|highs|low|level|line|average|band|range|hurdle|bar)\b)'
+  - term: reclaims
+    plain: climbs back to
+    match: '\breclaim(?:s|ed|ing)?\b'
+  - term: front end
+    plain: short-term interest rates
+  - term: term premium
+    plain: the extra yield for lending for longer
+  - term: unwind
+    plain: investors selling out of a popular trade
+    match: '\bunwind(?:s|ing)?\b'
+  - term: crowded
+    plain: a trade too many investors already own
+  - term: guide
+    plain: the company's own forecast
+    note: the earnings sense ("raised guide", "guided up"); "a guide to" and "guidance" are fine
+    match: '\b(?:raised?|raising|cut|cuts|lowered|lowers?|beat|missed|soft|weak|strong|light|in-line|full-year)\s+guide\b|\bguide[sd]?\s+(?:up|down|higher|lower|light|above|below)\b'
+  - term: frothy
+    plain: overheated
+    match: '\bfroth(?:y)?\b'
+  - term: flush
+    plain: a quick, sharp drop
+  - term: shelf
+    plain: a price level that has held
+  - term: 2s10s
+    plain: the gap between 2-year and 10-year Treasury yields
+  - term: complex
+    plain: group
+    note: the noun, as in "the AI complex"
+    match: '\b(?:the|a|this|that)\s+(?:[a-z-]+\s+)?complex\b'
