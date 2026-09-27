@@ -41,7 +41,7 @@ vi.mock("@/hooks/useRunQueue", () => ({
 }));
 
 // Imported after the mock so the component picks it up.
-const { DeskView } = await import("@/components/DeskView");
+const { DeskView, refreshTemplate } = await import("@/components/DeskView");
 
 function rows<T>(
   payload: unknown[],
@@ -373,7 +373,7 @@ describe("the Desk", () => {
     expect(decideMutate).toHaveBeenCalledWith({ id: 2, decision: "accept" });
   });
 
-  it("shows the worker's drift and asks what changed before queueing a refresh", async () => {
+  it("shows the worker's drift and opens the refresh already filled in from it", async () => {
     const user = userEvent.setup();
     refreshMutate.mockClear();
     render(<DeskView data={honestDesk()} now={NOW} />);
@@ -389,13 +389,28 @@ describe("the Desk", () => {
       screen.getByText(/crypto phase read may be out of date: 2 of the 4/),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Refresh the call" }));
+    // One click queues it: the reason is the drift bar's own words.
+    const box = screen.getByLabelText("What changed?") as HTMLTextAreaElement;
+    expect(box.value).toMatch(/^Routine refresh from the Desk\. Drift 10\/10 on call /);
+    expect(box.value).toContain("- ");
+    expect(box.value).toMatch(/crypto phase read may be out of date/);
     const queue = screen.getByRole("button", { name: "Queue the refresh" });
-    expect(queue).toBeDisabled();
-    await user.type(screen.getByLabelText("What changed?"), "HY through 300");
+    expect(queue).toBeEnabled();
     await user.click(queue);
-    expect(refreshMutate).toHaveBeenCalledWith(
-      "HY through 300",
-      expect.anything(),
+    expect(refreshMutate).toHaveBeenCalledWith(box.value, expect.anything());
+
+    // The operator can still say it in their own words instead.
+    refreshMutate.mockClear();
+    await user.clear(box);
+    expect(queue).toBeDisabled();
+    await user.type(box, "HY through 300");
+    await user.click(queue);
+    expect(refreshMutate).toHaveBeenCalledWith("HY through 300", expect.anything());
+  });
+
+  it("opens a refresh with a plain reason when drift has not been scored", () => {
+    expect(refreshTemplate(null)).toBe(
+      "Routine refresh from the Desk: re-read the active call against the latest data.",
     );
   });
 

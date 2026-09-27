@@ -3840,7 +3840,11 @@ kbd {
 .desk-refresh-form {
   display: grid;
   gap: 6px;
-  width: min(380px, 100%);
+  /* A fixed width, not min(380px, 100%): inside the drift bar's `auto` track a
+     percentage is unresolved while the track is sized, so the track grew to the
+     help sentence's one-line width and squeezed the drift text to a word a line. */
+  width: 380px;
+  max-width: 100%;
 }
 
 .desk-refresh-form label {

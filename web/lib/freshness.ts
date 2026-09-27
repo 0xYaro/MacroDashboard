@@ -481,7 +481,7 @@ export interface HealthFinding {
  * What each check is called, singular and plural, from its `check_key`.
  *
  * The keys are the producers' and are never renamed: every key here is one
- * the worker (`worker/src/macro`) or the desk command (`agent/src`) writes to
+ * the worker (`worker/src/macro`) or the agent package (`agent/src`) writes to
  * `macro_quality.finding`, and a key nobody writes does not belong here. What
  * the reader sees is a clause they can act on: `condition_coverage` is a true
  * name for the check and tells an operator nothing about what to do next.
@@ -559,6 +559,21 @@ const CHECK_CLAUSE: Readonly<Record<string, readonly [string, string]>> = {
   desk_catalyst_refused: ["calendar item refused", "calendar items refused"],
   desk_tail_risk_refused: ["tail risk refused", "tail risks refused"],
   desk_holding_refused: ["holding refused", "holdings refused"],
+  // authoring agent: the narrative run and the proposal's pre-flight (agent/src)
+  narrative_series_missing: ["narrative series missing", "narrative series missing"],
+  typed_condition_coverage: ["call with no typed conditions", "calls with no typed conditions"],
+  r1_levels_are_cash_levels: ["R1 gap: a weekly change not read off cash", "R1 gaps: weekly changes not read off cash"],
+  r2_two_sided: ["R2 gap: bands all on one side", "R2 gaps: bands all on one side"],
+  r3_oil_bands_sized_from_the_range: ["R3 gap: oil bands too narrow", "R3 gaps: oil bands too narrow"],
+  r4_risk_off_has_a_confirming_leg: ["R4 gap: risk-off trigger has no typed confirming leg", "R4 gaps: risk-off triggers have no typed confirming leg"],
+  r5_leadership_has_its_own_axis: ["R5 gap: a scenario has no leadership target", "R5 gaps: scenarios have no leadership target"],
+  r6_dateless_shock_is_priced: ["R6 gap: no dateless shock priced", "R6 gaps: no dateless shock priced"],
+  r7_the_two_books_get_their_own_rows: ["R7 gap: crypto shares the equity rows", "R7 gaps: crypto shares the equity rows"],
+  r8_conjunction_falsifier_is_priced: ["R8 gap: joint falsifier not priced", "R8 gaps: joint falsifiers not priced"],
+  r9_leadership_is_not_in_the_trigger: ["R9 gap: leadership inside a trigger", "R9 gaps: leadership inside triggers"],
+  r10_no_streak_extrapolated: ["R10 gap: a flow streak extrapolated", "R10 gaps: flow streaks extrapolated"],
+  r11_oil_has_its_own_axis: ["R11 gap: oil has no axis of its own", "R11 gaps: oil has no axis of its own"],
+  r12_driver_named_per_asset: ["R12 gap: driver not named per asset", "R12 gaps: drivers not named per asset"],
   // runner (agent/src/macro_agent/runner.py)
   run_changed_repo: ["Claude run changed repo files", "Claude runs changed repo files"],
 };

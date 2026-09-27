@@ -135,6 +135,22 @@ function DriftBar({
 
 /* ------------------------------------------------------ refresh control */
 
+/**
+ * The reason a Refresh opens with, so one click queues it. It is what the
+ * drift bar already says, in the words the amend run reads: the call, the
+ * window, the score and every change. The operator can still edit or replace it.
+ */
+export function refreshTemplate(drift: Drift | null): string {
+  if (drift === null) {
+    return "Routine refresh from the Desk: re-read the active call against the latest data.";
+  }
+  const window =
+    drift.asof === null ? "" : ` as of ${dayLabel(drift.asof)}`;
+  const head = `Routine refresh from the Desk. Drift ${drift.score}/10 on call ${drift.week}${window}: ${drift.reason}`;
+  if (drift.items.length === 0) return head;
+  return [head, ...drift.items.map((item) => `- ${item.sentence}`)].join("\n");
+}
+
 function RefreshControl({
   drift,
   runs,
@@ -166,7 +182,10 @@ function RefreshControl({
       <div className="desk-refresh">
         <button
           className={drift?.refreshSuggested ? "button-accent" : "button-plain"}
-          onClick={() => setAsking(true)}
+          onClick={() => {
+            setReason(refreshTemplate(drift));
+            setAsking(true);
+          }}
           type="button"
         >
           Refresh the call
@@ -207,7 +226,7 @@ function RefreshControl({
             ? drift.items[0].sentence
             : "e.g. oil broke $95 and HY is widening"
         }
-        rows={2}
+        rows={4}
         value={reason}
       />
       <div className="desk-refresh-actions">

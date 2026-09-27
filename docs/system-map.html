@@ -174,7 +174,7 @@ ul.tight{margin:6px 0 0;padding-left:18px} ul.tight li{margin:4px 0}
 
 <h2 class="sec" id="changes">Changes, newest first</h2>
 <div class="card">
-  <p class="batch">27 Sept 2026 · after the weekend Refresh audit</p>
+  <p class="batch">27 Sept 2026 · after the weekend Refresh audit (1–4) and the one-click Refresh (5–6)</p>
   <ul class="chg-list" id="chg-list"></ul>
 </div>
 <h2 class="sec" id="map">The system in one picture</h2>
@@ -332,6 +332,12 @@ sequenceDiagram
 /* The one list to edit when the system changes. `areas` are data-area ids on the map:
    sources feeds desk worker runner claude cli accounting db mart quality core web you */
 const CHANGES = [
+  {n:6, title:"Refresh opens already filled in", status:"shipped", areas:["web"],
+   what:"Pressing Refresh fills the reason from the drift bar (score, window, every change), so one more click queues it; you can still edit or replace it.",
+   files:["web/components/DeskView.tsx"]},
+  {n:5, title:"Plain labels for rule findings; drift bar layout", status:"shipped", areas:["web"],
+   what:"R1 to R12 findings now read as gaps (e.g. 'R4 gap: risk-off trigger has no typed confirming leg') instead of sounding like passes; opening the Refresh form no longer squeezes the drift text into one word per line.",
+   files:["web/lib/freshness.ts","web/app/globals.css"]},
   {n:1, title:"A new week's trigger must be typed", status:"shipped", areas:["cli"],
    what:"author propose refuses a scenario whose trigger is all manual, and a risk-off branch whose confirming leg (VIX, MOVE, HY, IG or breadth) is not typed. Amendments are exempt.",
    files:["agent/src/macro_agent/validate.py","agent/SKILL.md"]},
