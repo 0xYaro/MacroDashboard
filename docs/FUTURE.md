@@ -12,7 +12,8 @@ Worth doing when a setup or a scenario clause names one.
 
 ## Scrapers replacing the remaining numeric search agents
 
-24-hour liquidations, CME FedWatch's hike odds, ISM manufacturing and services, and State Street's two monthly figures are fetched by LLM search agents on the 09:40 narrative run.
+24-hour liquidations, ISM manufacturing and services, and State Street's two monthly figures are fetched by LLM search agents on the 09:40 narrative run.
+FedWatch's hike odds moved to a deterministic computation from fed funds futures on 2026-09-28.
 ETF flows and streaks moved to a deterministic fetcher on 2026-09-24: SoSoValue's keyless daily history, checked against Farside through `curl_cffi`.
 The CNN Fear and Greed index moved to a deterministic fetcher on 2026-09-23.
 Each of the rest is a single number from a page, and each would be cheaper, faster and louder in failure as a deterministic scraper.

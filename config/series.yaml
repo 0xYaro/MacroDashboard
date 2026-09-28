@@ -628,11 +628,11 @@ series:
   # in any trigger the operator writes ("Oct 28 stays near a coin flip"), and a
   # text series can only ever appear in a manual condition.
   #
-  # NOT fetched by the worker. CME's own FedWatch page is a client-rendered
-  # application with no keyless endpoint behind it, so this stays on the 09:30
-  # search agent and belongs to the authoring run's narrative mode. It is
-  # declared here so the registry is complete and a condition naming it
-  # validates.
+  # Fetched by the worker since 2026-09-28 (worker/src/macro/fetchers/
+  # fed_funds_futures.py): FedWatch's own arithmetic over the CBOT 30-day fed
+  # funds contracts Yahoo serves, rather than a search agent reading news that
+  # quoted CME's page. It agrees with CME's figure to within a few points, not
+  # to the decimal, and the source string says it was computed.
   - key: fedwatch_hike_prob_next
     label: FedWatch hike odds, next FOMC
     table_group: Sentiment & Positioning
@@ -642,10 +642,10 @@ series:
     decimals: 1
     cadence: daily
     release_rule: us_session
-    replayable: false
-    source_name: CME FedWatch via aggregator (search agent)
-    fetch_path: agent_0930
-    tier_floor: 2
+    replayable: true
+    source_name: Computed from CBOT 30-day fed funds futures (Yahoo), FedWatch method
+    fetch_path: deterministic
+    tier_floor: 1
 
   # ===========================================================================
   # Flows & Structure

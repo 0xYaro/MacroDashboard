@@ -786,13 +786,13 @@ async def test_the_narrative_run_writes_the_board_and_says_what_it_could_not(
         ],
         "macro": [
             {
-                "series": "fedwatch_hike_prob_next",
-                "value": "18.5",
-                "display": "18.5% odds of a hike on Oct 28",
+                "series": "ism_services",
+                "value": "55.4",
+                "display": "55.4, above the 54.3 consensus",
                 "tier": 2,
-                "asof": "2026-09-25",
-                "released": "",
-                "source": "Reuters quoting CME FedWatch",
+                "asof": "2026-08-31",
+                "released": "2026-09-03",
+                "source": "ISM Report On Business",
             },
             {
                 "series": "ism_manufacturing",
@@ -834,7 +834,7 @@ async def test_the_narrative_run_writes_the_board_and_says_what_it_could_not(
     owned = set(narrative.agent_series(pg_settings))
     # `fed_funds` is prose: it carries `value` null by contract, and it landed.
     # Landing is decided on the tier, not on the value.
-    landed = {"fedwatch_hike_prob_next", "ism_manufacturing", "fed_funds"}
+    landed = {"ism_services", "ism_manufacturing", "fed_funds"}
 
     assert result["observations_written"] == 4
     assert result["events_written"] == 1
@@ -846,12 +846,12 @@ async def test_the_narrative_run_writes_the_board_and_says_what_it_could_not(
     # counted, because the owned set grew from thirteen to sixteen once already.
     assert set(result["series_missing"]) == owned - landed
     assert "liquidations_24h" in result["series_missing"]
-    assert "fedwatch_hike_prob_next" not in result["series_missing"]
+    assert "ism_services" not in result["series_missing"]
     assert "fed_funds" not in result["series_missing"]
 
     gaps = dict(await store.open_gaps(since=date(2026, 9, 1)))
     assert "liquidations_24h" in gaps
-    assert "fedwatch_hike_prob_next" not in gaps
+    assert "ism_services" not in gaps
 
     async with store.transaction() as connection:
         runs = await connection.fetch(
@@ -879,13 +879,13 @@ async def test_replaying_the_narrative_run_restates_rather_than_grows(store, pg_
     returns = {
         "macro": [
             {
-                "series": "fedwatch_hike_prob_next",
-                "value": "18.5",
-                "display": "18.5% odds of a hike on Oct 28",
+                "series": "ism_services",
+                "value": "55.4",
+                "display": "55.4, above the 54.3 consensus",
                 "tier": 2,
-                "asof": "2026-09-25",
-                "released": "",
-                "source": "Reuters quoting CME FedWatch",
+                "asof": "2026-08-31",
+                "released": "2026-09-03",
+                "source": "ISM Report On Business",
             }
         ]
     }

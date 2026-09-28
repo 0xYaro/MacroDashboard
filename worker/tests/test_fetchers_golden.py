@@ -32,6 +32,13 @@ from macro.fetchers import (
     yahoo,
 )
 from macro.fetchers.base import FetchContext
+from macro.fetchers.fed_funds_futures import (
+    FedFundsFutures,
+    Month,
+    contracts_for,
+    implied,
+    normalize_closes,
+)
 from macro.http import FetchRefused
 from macro.model import RawBatch
 from macro.series import load as load_registry
@@ -701,17 +708,57 @@ def test_ism_has_no_fetcher_because_fred_does_not_serve_it(registry):
     assert registry.require("ism_services").fetch_path == "agent_0930"
 
 
-def test_the_fedwatch_probability_is_declared_but_not_fetched(registry):
-    """The registry is complete so a condition naming it validates.
+def test_the_fedwatch_probability_is_computed_here_and_the_prose_row_is_not():
+    """Since 2026-09-28 the number is the worker's; the prose FedWatch row stays the agent's."""
+    numeric = registry_for_fedwatch()
+    assert numeric.fetch_path == "deterministic"
+    assert numeric.replayable is True
+    assert numeric.value_kind == "numeric" and numeric.unit == "percent"
+    assert "fedwatch_hike_prob_next" in FedFundsFutures().series
 
-    It is the authoring run's to write: CME's FedWatch page is a client-rendered
-    application with no keyless endpoint behind it.
+
+def registry_for_fedwatch():
+    return load_registry(CONFIG).require("fedwatch_hike_prob_next")
+
+
+def test_the_october_meeting_is_read_off_the_october_and_november_contracts():
+    """FedWatch's arithmetic on the settles of Thursday 24 September 2026.
+
+    November holds no meeting, so its price is the post-meeting rate outright;
+    October's average solves for the rate that held for the 28 days before the
+    28 October decision: (31 x 3.8935 - 3 x 4.05) / 28 = 3.8767, a 17.3 bp move,
+    69.3% of a quarter point. The news that week quoted CME at about 73%.
     """
-    numeric = registry.require("fedwatch_hike_prob_next")
-    assert numeric.fetch_path == "agent_0930"
-    assert numeric.value_kind == "numeric"
-    assert registry.require("fedwatch_next_fomc").value_kind == "text"
-    assert not any("fedwatch" in key for key in fred.Fred().series)
+    oct_, nov = Month(2026, 10), Month(2026, 11)
+    assert contracts_for(date(2026, 10, 28)) == (oct_, nov)
+    closes = {
+        oct_.symbol: {date(2026, 9, 24): Decimal("96.1065")},
+        nov.symbol: {date(2026, 9, 24): Decimal("95.95")},
+    }
+    rows = normalize_closes(closes, instant("2026-09-25T02:00:00Z"))
+    assert [(row.asof, row.value) for row in rows] == [(date(2026, 9, 24), Decimal("69.3"))]
+    assert rows[0].extra["meeting"] == "2026-10-28"
+    assert rows[0].display == "69.3% hike odds for the Oct 28 FOMC (implied +17.3 bp)"
+    assert rows[0].tier == 1 and "Computed" in rows[0].source
+
+
+def test_a_december_meeting_never_leans_on_an_unlisted_january():
+    """January usually holds a meeting; until next year's calendar is listed it is not trusted."""
+    assert contracts_for(date(2026, 12, 9)) == (Month(2026, 12), Month(2026, 11))
+
+
+def test_a_priced_cut_reads_zero_hike_odds_and_keeps_the_move():
+    move = implied(
+        date(2026, 10, 28), Month(2026, 10), Month(2026, 11), Decimal("96.20"), Decimal("96.37")
+    )
+    assert move is not None and move.move_bp < 0
+    assert move.hike_probability == 0
+
+
+def test_the_futures_contract_symbols_follow_cme_month_codes():
+    assert Month(2026, 10).symbol == "ZQV26.CBT"
+    assert Month(2026, 11).symbol == "ZQX26.CBT"
+    assert Month(2026, 12).shift(1) == Month(2027, 1)
 
 
 # ---------------------------------------------------------------------------

@@ -57,11 +57,10 @@ recovered point only when its tier is strictly better.
    series is a number no condition can ever read and a null in one is
    indistinguishable from a Tier 4 failure.
 
-   `fedwatch_hike_prob_next` sits in the same table group and is the opposite.
-   It is the numeric companion to the prose FedWatch row and does not replace
-   it: the implied odds for the next meeting are the most-quoted figure in any
-   trigger the operator writes, and a `text` series can only ever appear in a
-   `manual` condition. Both are asked for and both are returned.
+   `fedwatch_hike_prob_next` sits in the same table group and is the opposite:
+   the numeric companion to the prose FedWatch row. Since 2026-09-28 the worker
+   computes it from fed funds futures (`fed_funds_futures.py`), so this run no
+   longer searches for it; the prose row stays here.
 
 6. **ISM is a search target because it is not free.** `ism_manufacturing` and
    `ism_services` are `agent_0930` rather than deterministic for a measured
@@ -186,8 +185,7 @@ you confirmed the state, never the date of the event the sentence describes: the
 - `fedwatch_next_fomc` "FedWatch quote, next FOMC" - hold / cut / hike odds for the next meeting. Do NOT fetch cmegroup.com (blocked); use news / aggregators quoting FedWatch same-day, and say the date the odds were quoted. This is its OWN series and is never returned under the `next_fomc` key: one is the meeting date and does not move, the other is the market-implied path into it and moves daily.
 - `tariff_state` "Tariff regime" - one line on the current posture and any dated implementation inside 30 days.
 - `geopolitical_state` "Geopolitical state" - one line on the active flashpoints as they stand now.
-The last three are NUMBERS: the value in the unit named, the sentence in display.
-- `fedwatch_hike_prob_next` "FedWatch hike odds, next FOMC" - the implied probability of a hike at the next meeting, in PERCENT (50.9, not 0.509), from the same same-day quote as `fedwatch_next_fomc`, with its quote date as asof. It is the number beside that prose row and never replaces it: return both.
+The last two are NUMBERS: the value in the unit named, the sentence in display.
 - `ism_manufacturing` "ISM manufacturing PMI" - the latest ISM Manufacturing PMI headline, index points, one decimal. asof = the last day of the data month, released = the release date. Fresh until the next release; never flag it stale.
 - `ism_services` "ISM services PMI" - the latest ISM Services PMI headline, index points, one decimal, same asof convention."""
 
@@ -273,7 +271,6 @@ def categories(
                 "fed_funds",
                 "next_fomc",
                 "fedwatch_next_fomc",
-                "fedwatch_hike_prob_next",
                 "ism_manufacturing",
                 "ism_services",
                 "tariff_state",

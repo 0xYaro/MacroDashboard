@@ -142,17 +142,17 @@ async def test_a_gap_on_a_replayable_series_is_not_permanent(registry):
 
 
 async def test_a_gap_on_a_point_in_time_series_is_permanent(registry):
-    """`fedwatch_hike_prob_next` is `replayable: false`: an aggregator serves only today.
+    """`liquidations_24h` is `replayable: false`: a rolling window read at run time.
 
     A session missed is a session gone. The gap says so, and every condition
     over that date reports unevaluable for as long as it sits inside a
     predicate's window.
     """
-    assert registry.require("fedwatch_hike_prob_next").replayable is False
+    assert registry.require("liquidations_24h").replayable is False
     result = await run_one(
-        Fake(source="search", series=("fedwatch_hike_prob_next",), rows=[]),
+        Fake(source="search", series=("liquidations_24h",), rows=[]),
         client=None,
-        ctx=ctx(registry, {"fedwatch_hike_prob_next": "2026-09-22"}),
+        ctx=ctx(registry, {"liquidations_24h": "2026-09-22"}),
     )
     assert result.gaps
     assert all(one.permanent for one in result.gaps)

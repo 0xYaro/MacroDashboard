@@ -781,3 +781,15 @@ The repository got its first commit the same day, so the before and after have a
 launchd skips a calendar job missed while the Mac is powered off.
 The operator re-runs a missed morning by hand and asked for no automatic catch-up.
 
+## 2026-09-28: FedWatch hike odds are computed from fed funds futures
+
+`fedwatch_hike_prob_next` was a search agent reading news that quoted CME FedWatch, because CME's page is blocked.
+The number arrived second-hand and late (73.5% "as quoted Sep 24" was still the Desk's reading on the 28th), and a search agent that fails returns a plausible number instead of a fault, which `docs/FUTURE.md` names as the reason to replace these.
+FedWatch is arithmetic over CBOT 30-day fed funds futures, which Yahoo serves keyless, so the worker now does that arithmetic (`worker/src/macro/fetchers/fed_funds_futures.py`) on every US session, Tier 1, replayable.
+It agrees with CME's own figure to within a few points, not to the decimal (69% against a quoted 73% on 24 Sept), and the source string says it was computed.
+The key, unit and meaning are unchanged, so every condition already written on it keeps working.
+The prose `fedwatch_next_fomc` row stays with the narrative run.
+
+The rest of the FUTURE.md entry was reviewed the same day and left as it is.
+ISM is monthly and its report pages are not a stable API; State Street's monthly figures have no reachable source; liquidations need a Coinglass key the operator has not issued.
+

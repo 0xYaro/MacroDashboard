@@ -21,6 +21,7 @@ from .coingecko import CoinGecko
 from .coinmarketcap import CoinMarketCap
 from .defillama import DefiLlama
 from .etf_flows import EtfFlows
+from .fed_funds_futures import FedFundsFutures
 from .fred import Fred
 from .treasury import Treasury
 from .treasury_auctions import TreasuryAuctions
@@ -48,6 +49,7 @@ def deterministic() -> tuple[Fetcher, ...]:
         DefiLlama(),
         CoinMarketCap(),
         EtfFlows(),
+        FedFundsFutures(),
     )
     return out
 
@@ -62,6 +64,7 @@ __all__ = [
     "CoinMarketCap",
     "DefiLlama",
     "EtfFlows",
+    "FedFundsFutures",
     "FetchContext",
     "Fetcher",
     "Fred",

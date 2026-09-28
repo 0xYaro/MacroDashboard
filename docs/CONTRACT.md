@@ -406,7 +406,7 @@ This table is its summary and must stay in step with it.
 | Macro | Tariff regime, geopolitical state | event | search agent | 09:30 only |
 | Macro prints | Core and headline CPI, core and headline PCE, payrolls, unemployment, JOLTS openings, retail sales and its control group | monthly, on the release calendar | FRED | deterministic |
 | Macro prints | ISM manufacturing and services | monthly | search agent | 09:30 only |
-| Sentiment | FedWatch hike odds, next FOMC | daily | search agent | 09:30 only |
+| Sentiment | FedWatch hike odds, next FOMC | every US session | computed from CBOT fed funds futures (Yahoo), FedWatch method | deterministic |
 | Price & Levels | BTC 50-week moving average | weekly | computed from CoinGecko history | deterministic |
 | Rates | Auction high yield and bid-to-cover, per tenor | event, scheduled irregularly | TreasuryDirect `TA_WS/securities` | deterministic |
 
@@ -419,7 +419,7 @@ The macro prints exist because almost every trigger clause ever written names on
 A print is stored as the figure the clause refers to: the month-over-month percentage for CPI, PCE and retail sales, the level change for payrolls, the level for unemployment, JOLTS and ISM.
 Where FRED serves an index rather than a change, the worker computes the change and stores that, because "core PCE at 0.2%" refers to the change and a condition written against the index level would be quietly wrong.
 
-`fedwatch_hike_prob_next` is the numeric companion to the `text` FedWatch row and does not replace it.
+`fedwatch_hike_prob_next` is the numeric companion to the `text` FedWatch row and does not replace it; since 2026-09-28 the worker computes it from fed funds futures and the search agent writes only the prose row.
 The odds for the next meeting are the most-quoted number in any trigger the operator writes, and a `text` series can only ever appear in a `manual` condition.
 
 `btc_50w_ma` is the crypto framework's anchor for Phase 1 and for both the 5 to 1 and 1 to 2 transition recipes, and it was the one crypto tracker condition that could not be typed at all.

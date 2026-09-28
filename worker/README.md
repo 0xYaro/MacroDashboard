@@ -264,9 +264,14 @@ ISM is not here. `NAPM` and `NAPMNOI` are discontinued and both answer 404,
 verified against the live endpoint, so the two ISM rows stay on the 09:30 search
 agent rather than being given a fetcher that cannot work.
 
-`fedwatch_hike_prob_next` is declared in the registry so a condition naming it
-validates, and has no fetcher here: CME's FedWatch page is a client-rendered
-application with no keyless endpoint behind it.
+`fedwatch_hike_prob_next` is computed here since 2026-09-28
+(`fetchers/fed_funds_futures.py`), not read from CME: FedWatch is arithmetic
+over CBOT 30-day fed funds futures, which Yahoo serves. The meeting month's
+average and a meeting-free neighbour give the rates either side of the next
+decision; the move in quarter points, clamped to 0 to 100, is the hike
+probability, and the signed move travels in `extra`. It agrees with CME's own
+figure to within a few points. The meeting calendar is a constant in that
+module; when it runs out the source refuses and names the year to add.
 
 ### Treasury auctions, and the tail that is deliberately absent
 
