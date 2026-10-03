@@ -92,7 +92,7 @@ def voidings(
                     )
                 )
                 continue
-            reason = _why(catalyst, horizon)
+            reason = _why(catalyst, horizon, now=now, others=catalysts.values())
             if reason is None:
                 continue
             out.append(
@@ -118,9 +118,27 @@ def voidings(
     return out, findings
 
 
-def _why(catalyst: Catalyst, horizon: date) -> str | None:
-    """The reason this catalyst no longer supports its clause, or `None`."""
+#: How far apart a retired catalyst and a tracked one of the same family may be
+#: dated and still be one event under two names.
+RENAME_DAYS = 1
+
+
+def _why(
+    catalyst: Catalyst, horizon: date, *, now: datetime, others: Iterable[Catalyst]
+) -> str | None:
+    """The reason this catalyst no longer supports its clause, or `None`.
+
+    A retirement is a moved premise only when the event was still to come and
+    nothing replaced it. The Catalyst Monitor drops an event from its note once
+    it has happened, and it renames one by retiring the old line and adding the
+    new: W40 lost its PCE, Micron and payrolls clauses to exactly those two, the
+    payrolls ones the morning after the report they were written to be scored on.
+    """
     if catalyst.status == "retired":
+        if catalyst.starts_at is not None and catalyst.starts_at <= now:
+            return None
+        if _renamed(catalyst, others):
+            return None
         return (
             f"the Catalyst Monitor retired {catalyst.name!r}, so the event the clause is written "
             "against is not going to happen inside the scenario's horizon"
@@ -136,6 +154,20 @@ def _why(catalyst: Catalyst, horizon: date) -> str | None:
             f"the scenario's horizon of {horizon.isoformat()}"
         )
     return None
+
+
+def _renamed(retired: Catalyst, others: Iterable[Catalyst]) -> bool:
+    """A tracked catalyst of the same family dated within a day: the same event renamed."""
+    if retired.family is None or retired.starts_at is None:
+        return False
+    window = timedelta(days=RENAME_DAYS)
+    return any(
+        one.status == "tracked"
+        and one.family == retired.family
+        and one.starts_at is not None
+        and abs(one.starts_at - retired.starts_at) <= window
+        for one in others
+    )
 
 
 def flagged_scenarios(clauses: Iterable[TriggerClause]) -> frozenset[str]:

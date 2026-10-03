@@ -29,7 +29,7 @@ from decimal import Decimal
 from typing import Any, Literal
 
 from . import release
-from .expr import Context, ExpressionRefused, Outcome
+from .expr import Context, ExpressionRefused, Outcome, current_reading
 from .expr import evaluate as evaluate_expression
 from .families import classify
 from .model import (
@@ -520,7 +520,11 @@ def scenarios(
 ) -> tuple[list[ScenarioState], list[ScenarioTargetState], list[ConditionState]]:
     """Score every clause and every target band of one active scenario set."""
     clipped = Context(
-        asof=ctx.asof, history=ctx.history, registry=ctx.registry, not_before=activated_on
+        asof=ctx.asof,
+        history=ctx.history,
+        registry=ctx.registry,
+        not_before=activated_on,
+        forward=True,
     )
     states: list[ScenarioState] = []
     target_states: list[ScenarioTargetState] = []
@@ -625,7 +629,12 @@ def target_state(target: ScenarioTarget, ctx: Context) -> ScenarioTargetState:
             distance_to_breach=None,
         )
 
-    reading = ctx.history.at(target.series_key, ctx.asof)
+    series = ctx.registry.get(target.series_key)
+    reading = (
+        ctx.history.at(target.series_key, ctx.asof)
+        if series is None
+        else current_reading(series, ctx)[0]
+    )
     current = None if reading is None else reading.value
     if current is None:
         return ScenarioTargetState(

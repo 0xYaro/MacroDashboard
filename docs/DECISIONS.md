@@ -793,3 +793,27 @@ The prose `fedwatch_next_fomc` row stays with the narrative run.
 The rest of the FUTURE.md entry was reviewed the same day and left as it is.
 ISM is monthly and its report pages are not a stable API; State Street's monthly figures have no reachable source; liquidations need a Coinglass key the operator has not issued.
 
+
+## 2026-10-04: Releases are scored at their newest print, and a past event no longer voids its clause
+
+Two rules kept W40's deciding events from ever being scored.
+
+**A series published after the day it describes is read at its newest print.**
+Every comparison used to need a reading dated exactly on the evaluation session.
+That is right for a price, and the rule stays for every series with no `release=` key: a Friday close is never read as a Monday one.
+But a monthly print is dated its month's end and a FRED spread arrives a business day late, so neither ever had a reading on the session: the PCE and payrolls clauses could not be scored even after the numbers were out, and the HY band was blank on most runs.
+Now a series with a `release=` key is read at its newest observation while the next one is not yet due by its own release rule (`expr.current_reading`).
+A trigger clause on a monthly or weekly print also needs that print released after the clause went live, because the clause is about the next print: otherwise W40's "core PCE between 0.2% and 0.3%" would have fired on July's 0.25% the moment it was activated.
+A standing condition and a target band read the print in force.
+
+**A retirement voids a clause only when the event was still to come and nothing replaced it.**
+The Catalyst Monitor drops an event from its note once it has happened, and renames one by retiring the old line and adding the new.
+The premise rule read both as the event being called off: W40 lost its PCE clause to a rename on 30 September, its two Micron clauses the morning after earnings, and its three payrolls clauses the morning after the report, exactly when they were due to be scored.
+A retired catalyst whose start has passed, or that has a tracked catalyst of the same family within a day, now voids nothing.
+A real cancellation, and a reschedule past the horizon, still void as before.
+
+**W40's six clauses were restored by hand.**
+The operator approved clearing `void_at` and `void_reason` on the six clauses voided under the old rule, before Monday's grading; all six were "the Catalyst Monitor retired ..." voids the new rule would not have made.
+They were 97261bb7 (S1 core PCE, voided 30 Sept 09:30 SGT), be74ffcb (S1 payrolls, 3 Oct), 76bf5230 (S1 Micron, 1 Oct), a79e2a52 (S2 hot data, 3 Oct), 12b9a5f0 (S2 Micron, 1 Oct) and c1ba5c04 (S3 cooler data, 3 Oct).
+This edits the judgment record, which the premise rule otherwise never does; it is recorded here so the week's grade can be read with it.
+The same day the operator rejected run 12, a W40 amendment written before the 29K payrolls print that raised the hot-data scenario.

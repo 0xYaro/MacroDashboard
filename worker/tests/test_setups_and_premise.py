@@ -408,6 +408,56 @@ def test_a_retired_catalyst_voids_its_clause_with_a_reason():
     assert any(one.check_key == "scenario_premise_moved" for one in findings)
 
 
+def test_a_catalyst_retired_after_its_event_took_place_voids_nothing():
+    """W40 in production: Micron and payrolls were voided the morning after they printed.
+
+    The Catalyst Monitor drops an event from its note once it has happened, and
+    the worker read that retirement as the event being called off. The premise
+    did not move: the event the clause was written against took place, and the
+    clause is exactly what has to be scored now.
+    """
+    printed = catalyst(status="retired", starts_at=datetime(2026, 9, 26, 12, 30, tzinfo=UTC))
+    found, findings = voidings(scenario_set(clause()), {"cat1": printed}, now=NOW)
+    assert found == []
+    assert findings == []
+
+
+def test_a_catalyst_renamed_before_its_event_voids_nothing():
+    """W40's PCE: the note retired one name and added the same release under another.
+
+    A tracked catalyst of the same family dated within a day of the retired one is
+    the same event under a new name, not a premise that moved.
+    """
+    when = datetime(2026, 9, 30, 12, 30, tzinfo=UTC)
+    old = catalyst(
+        status="retired",
+        starts_at=when,
+        family="us_pce",
+        name="Q2 GDP third estimate, annual GDP revisions, and August PCE",
+    )
+    new = catalyst(
+        external_key="k2",
+        starts_at=when,
+        family="us_pce",
+        name="Q2 GDP third estimate and August PCE",
+    )
+    found, findings = voidings(scenario_set(clause()), {"cat1": old, "cat2": new}, now=NOW)
+    assert found == []
+    assert findings == []
+
+
+def test_a_catalyst_retired_before_its_event_with_no_successor_still_voids():
+    """A cancellation is still a cancellation, however close the next one in its family."""
+    old = catalyst(
+        status="retired", starts_at=datetime(2026, 9, 30, 12, 30, tzinfo=UTC), family="us_pce"
+    )
+    next_month = catalyst(
+        external_key="k2", family="us_pce", starts_at=datetime(2026, 10, 29, 12, 30, tzinfo=UTC)
+    )
+    found, _ = voidings(scenario_set(clause()), {"cat1": old, "cat2": next_month}, now=NOW)
+    assert [one.condition_id for one in found] == ["c1"]
+
+
 def test_a_catalyst_rescheduled_past_the_horizon_voids_its_clause():
     """The horizon is fourteen days from the set's own authoring as-of.
 

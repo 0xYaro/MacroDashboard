@@ -831,3 +831,72 @@ def test_stage_is_carried_and_never_derived_from_the_conditions(registry):
 def test_no_stage_is_null_rather_than_guessed(registry):
     score = scored(registry, called())
     assert score.stage is None
+
+
+# ---------------------------------------------------------------------------
+# Series published after the day they describe
+# ---------------------------------------------------------------------------
+
+PCE_IN_BAND = {"op": "between", "series": "pce_core_mom", "lo": 0.2, "hi": 0.3}
+HY_IN_BAND = {"op": "between", "series": "hy_oas_bps", "lo": 270, "hi": 350}
+
+
+def clause_ctx(registry, hist, asof: str) -> Context:
+    """A W40 trigger clause: activated 2026-09-29, scored on a later session."""
+    base = context(registry, hist, asof, not_before="2026-09-29")
+    return Context(
+        asof=base.asof,
+        history=base.history,
+        registry=base.registry,
+        not_before=base.not_before,
+        forward=True,
+    )
+
+
+def test_a_clause_on_a_monthly_print_is_scored_once_the_print_lands(registry):
+    """W40 in production: August core PCE printed 0.25% and the clause stayed unevaluable.
+
+    A monthly print is dated its month's end, so it never has a reading on the
+    session a clause is scored on.
+    """
+    hist = history(
+        reading("pce_core_mom", "2026-07-31", "0.2455"),
+        reading("pce_core_mom", "2026-08-31", "0.2474"),
+    )
+    outcome = evaluate(PCE_IN_BAND, clause_ctx(registry, hist, "2026-10-02"))
+    assert outcome.status is Status.MET
+    assert outcome.evidence["current"] == "0.2474"
+
+
+def test_a_clause_is_never_settled_by_the_print_before_it_went_live(registry):
+    """July's 0.25% sits inside the band and was public a month before W40 began."""
+    hist = history(reading("pce_core_mom", "2026-07-31", "0.2455"))
+    outcome = evaluate(PCE_IN_BAND, clause_ctx(registry, hist, "2026-09-29"))
+    assert outcome.status is Status.UNEVALUABLE
+    assert "before this clause went live" in outcome.evidence["why"]
+
+
+def test_a_standing_condition_reads_the_current_monthly_print(registry):
+    """A phase condition is about the state, so the print in force is the reading."""
+    hist = history(reading("pce_core_mom", "2026-07-31", "0.2455"))
+    outcome = evaluate(PCE_IN_BAND, context(registry, hist, "2026-09-29"))
+    assert outcome.status is Status.MET
+
+
+def test_a_series_published_a_business_day_late_is_read_at_its_newest_print(registry):
+    """W40's HY band was blank on most runs: FRED posts Friday's spread on Monday."""
+    hist = history(reading("hy_oas_bps", "2026-09-25", "293"))
+    assert evaluate(HY_IN_BAND, context(registry, hist, "2026-09-28")).status is Status.MET
+
+    # By Tuesday the Monday print was due, so Friday's is no longer the state.
+    late = evaluate(HY_IN_BAND, context(registry, hist, "2026-09-29"))
+    assert late.status is Status.UNEVALUABLE
+    assert "was due by" in late.evidence["why"]
+
+
+def test_a_price_is_still_read_on_the_evaluation_date_exactly(registry):
+    """A Friday close is never read as a Monday one."""
+    hist = history(reading("vix", "2026-09-25", "14.87"))
+    vix_calm = {"op": "lt", "series": "vix", "value": 20}
+    outcome = evaluate(vix_calm, context(registry, hist, "2026-09-28"))
+    assert outcome.status is Status.UNEVALUABLE

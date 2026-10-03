@@ -332,6 +332,9 @@ sequenceDiagram
 /* The one list to edit when the system changes. `areas` are data-area ids on the map:
    sources feeds desk worker runner claude cli accounting db mart quality core web you */
 const CHANGES = [
+  {n:10, title:"Releases get scored; a past event no longer voids its clause", status:"shipped", areas:["worker","mart","web"],
+   what:"A series published after the day it describes (monthly prints, FRED spreads a day late, weekly reports) is now read at its newest print while the next one is not yet due, instead of needing a reading dated on the evaluation session. A trigger clause on a monthly or weekly print only counts a print released after the clause went live. And the premise rule no longer voids a clause when the Catalyst Monitor drops an event that already happened, or renames one (a tracked catalyst of the same family within a day). W40 lost six clauses to that rule before this fix; the operator had them restored on 4 Oct before Monday's grading (docs/DECISIONS.md).",
+   files:["worker/src/macro/expr.py","worker/src/macro/evaluate.py","worker/src/macro/premise.py","worker/tests/test_expr.py","worker/tests/test_setups_and_premise.py"]},
   {n:9, title:"A superseded week leaves the Desk", status:"shipped", areas:["worker","mart","web"],
    what:"Accepting W40 left W39's two scenario sets and four setups in the mart beside W40's, so the Desk read '9 scenarios' and '5 setups open'. Each evaluation now removes scenario, target, condition and setup rows it did not produce, in the same transaction, so the mart holds only the active judgment.",
    files:["worker/src/macro/store.py","worker/tests/test_store_postgres.py"]},

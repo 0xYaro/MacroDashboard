@@ -81,9 +81,10 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, Literal, Protocol
 
+from . import release
 from .model import Status
-from .observations import History
-from .series import Registry
+from .observations import History, Reading
+from .series import Registry, Series
 
 OPERATORS: frozenset[str] = frozenset({"lt", "lte", "gt", "gte", "eq", "between", "outside"})
 COMBINATORS: frozenset[str] = frozenset({"all", "any", "n_of"})
@@ -205,6 +206,11 @@ class Context:
     history: History
     registry: Registry
     not_before: date | None = None
+    #: A trigger clause rather than a standing condition. A clause on a monthly or
+    #: weekly print is written about the next print, so a print released before
+    #: the clause was activated cannot settle it: W40's "core PCE between 0.2% and
+    #: 0.3%" would otherwise have fired on July's 0.25% the moment it went live.
+    forward: bool = False
 
     def with_asof(self, asof: date) -> Context:
         """The same context pinned to a different evaluation date.
@@ -217,6 +223,7 @@ class Context:
             history=self.history,
             registry=self.registry,
             not_before=self.not_before,
+            forward=self.forward,
         )
 
 
@@ -285,6 +292,45 @@ def evaluate(expression: Any, ctx: Context) -> Outcome:
 # ---------------------------------------------------------------------------
 
 
+def current_reading(series: Series, ctx: Context) -> tuple[Reading | None, str]:
+    """The reading a comparison is made against, or `None` and the reason.
+
+    A series public the moment it exists (a price, the par curve) is read on the
+    evaluation date exactly, never on or before: that is how a Friday close gets
+    read as a Monday one. A series published after the day it describes (a FRED
+    spread a business day late, a monthly print weeks late) never has a reading
+    for the evaluation date, so it is read at its newest observation as long as
+    the next one was not yet due. Under the exact rule W40's HY band was blank on
+    most runs and its PCE and payrolls clauses could never be scored at all.
+    """
+    key = series.key
+    rule = series.release_rule
+    if rule.release_key is None:
+        exact = ctx.history.at(key, ctx.asof)
+        if exact is None:
+            return None, f"{key} has no observation for {ctx.asof.isoformat()}"
+        return exact, ""
+
+    latest = ctx.history.latest(key, on_or_before=ctx.asof)
+    if latest is None:
+        return None, f"{key} has no observation on or before {ctx.asof.isoformat()}"
+    due = release.next_expected(rule, latest.asof)
+    if due is not None and due <= ctx.asof:
+        return None, (
+            f"{key}'s newest observation is for {latest.asof.isoformat()}, and the next one "
+            f"was due by {due.isoformat()}"
+        )
+    if ctx.forward and ctx.not_before is not None and rule.base in ("monthly", "weekly"):
+        released = release.released_on(rule, latest.asof)
+        if released < ctx.not_before:
+            return None, (
+                f"{key}'s newest print, for {latest.asof.isoformat()}, was out by "
+                f"{released.isoformat()}, before this clause went live on "
+                f"{ctx.not_before.isoformat()}; the clause is about the next print"
+            )
+    return latest, ""
+
+
 def _comparison(expression: dict[str, Any], ctx: Context) -> Outcome:
     op = str(expression["op"])
     if op not in OPERATORS:
@@ -307,7 +353,7 @@ def _comparison(expression: dict[str, Any], ctx: Context) -> Outcome:
     field_name = expression.get("field")
     field = None if field_name is None else _field(str(field_name), key, op)
 
-    reading = ctx.history.at(key, ctx.asof)
+    reading, missing = current_reading(series, ctx)
     if reading is None or (field is None and reading.value is None):
         return Outcome(
             status=UNEVALUABLE,
@@ -319,9 +365,9 @@ def _comparison(expression: dict[str, Any], ctx: Context) -> Outcome:
                 **({"field": field.name} if field else {}),
                 "asof": ctx.asof.isoformat(),
                 "why": (
-                    f"{key} has no observation for {ctx.asof.isoformat()}"
+                    missing
                     if reading is None
-                    else f"{key} carries a null value for {ctx.asof.isoformat()}"
+                    else f"{key} carries a null value for {reading.asof.isoformat()}"
                 ),
                 "gap": ctx.history.has_gap(key, ctx.asof),
             },
