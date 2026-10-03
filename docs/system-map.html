@@ -332,6 +332,9 @@ sequenceDiagram
 /* The one list to edit when the system changes. `areas` are data-area ids on the map:
    sources feeds desk worker runner claude cli accounting db mart quality core web you */
 const CHANGES = [
+  {n:9, title:"A superseded week leaves the Desk", status:"shipped", areas:["worker","mart","web"],
+   what:"Accepting W40 left W39's two scenario sets and four setups in the mart beside W40's, so the Desk read '9 scenarios' and '5 setups open'. Each evaluation now removes scenario, target, condition and setup rows it did not produce, in the same transaction, so the mart holds only the active judgment.",
+   files:["worker/src/macro/store.py","worker/tests/test_store_postgres.py"]},
   {n:8, title:"Holdings watch covers the vault names too; cutover set for Wed 30 Sept", status:"progress", areas:["desk","core","feeds"],
    what:"The seven names from the vault holdings note (012330, D05, GLXY, MU, NBIS, RIOT, SKHY) are on the watch list beside Accounting's eight positions, all priced by the desk. Two shadow days on the combined list, then the cutover on Wed 30 Sept after the 09:30 run if the compare is clean, with Telegram reports moving to topics 471, 500 and 686.",
    files:["macro_core.watch_ticker (7 rows)","openclaw/README.md (cutover checklist)"]},

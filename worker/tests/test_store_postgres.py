@@ -18,12 +18,21 @@ from collections.abc import Iterator
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
+from uuid import uuid4
 
 import pytest
 
-from macro.model import Gap, Observation
+from macro.model import (
+    ConditionState,
+    Gap,
+    Observation,
+    ScenarioState,
+    ScenarioTargetState,
+    SetupState,
+)
 from macro.series import load as load_registry
-from macro.store import Store
+from macro.store import MartFlush, Store
 
 from .conftest import CONFIG
 
@@ -341,5 +350,145 @@ async def test_a_restated_breadth_session_keeps_its_s5th_cross_check(cluster):
         assert extra["s5th_close"] == "49.70"
         assert extra["s5th_divergence"] == "-0.70"
         assert extra["counted"] == 498
+    finally:
+        await store.aclose()
+
+
+def _judgment(week: str, setups: int) -> dict[str, list[Any]]:
+    """One week's evaluated judgment: three scenarios with a target and a clause each."""
+    set_id = str(uuid4())
+    scenarios, targets, conditions = [], [], []
+    for ordinal, probability in ((1, 45), (2, 33), (3, 22)):
+        scenario_id = str(uuid4())
+        scenarios.append(
+            ScenarioState(
+                scenario_id=scenario_id,
+                set_id=set_id,
+                ordinal=ordinal,
+                title=f"{week} S{ordinal}",
+                probability=probability,
+                positioning=None,
+                clauses_fired=0,
+                clauses_total=1,
+                clauses_void=0,
+                required_unmet=0,
+                bands_holding=0,
+                bands_total=0,
+                targets_holding=0,
+                targets_total=1,
+                premise_moved=False,
+            )
+        )
+        targets.append(
+            ScenarioTargetState(
+                target_id=str(uuid4()),
+                scenario_id=scenario_id,
+                series_key=None,
+                label=f"{week} target {ordinal}",
+                kind="manual",
+                comparator=None,
+                text="judged",
+                lo=None,
+                hi=None,
+                current=None,
+                holding=None,
+                distance_to_breach=None,
+            )
+        )
+        conditions.append(
+            ConditionState(
+                condition_id=str(uuid4()),
+                owner_kind="trigger",
+                owner_id=scenario_id,
+                ordinal=1,
+                text=f"{week} clause",
+                kind="manual",
+                status="unevaluable",
+                current_display=None,
+                evidence={},
+                source="asserted",
+            )
+        )
+    return {
+        "scenario_states": scenarios,
+        "target_states": targets,
+        "condition_states": conditions,
+        "setup_states": [
+            SetupState(
+                setup_id=str(uuid4()),
+                week=week,
+                asset="crypto",
+                series_key=None,
+                series_label=None,
+                name=f"{week} setup {i}",
+                entry_lo=Decimal(1),
+                entry_hi=Decimal(2),
+                invalidation=Decimal(0),
+                invalidation_dir="below",
+                target=Decimal(3),
+                rr_planned=None,
+                gate_state="unevaluable",
+                gate_reason="no series",
+                gate_text=None,
+                sector_focus_label=None,
+                band_touched_today=False,
+                band_touched_close=False,
+                entry_state="not triggered",
+                sessions_carried=0,
+                r_running=None,
+            )
+            for i in range(setups)
+        ],
+    }
+
+
+async def _mart_counts(store: Store) -> dict[str, int]:
+    counts = {}
+    for table in ("scenario_state", "scenario_target_state", "condition_state", "setup_state"):
+        rows = await store._fetch(f"select count(*) as n from macro_mart.{table}")
+        counts[table] = rows[0]["n"]
+    return counts
+
+
+async def test_a_superseded_week_leaves_the_mart_when_the_next_one_is_evaluated(cluster):
+    """W40 in production: the Desk read `9 scenarios` and `5 setups open`.
+
+    Accepting the W40 authoring superseded W39's set, its amendment and its four
+    setups, and the rescore upserted W40's rows beside them because the flush
+    never removed a row. The web reads these tables whole, as the contract says
+    `macro_mart` is: the active judgment, rebuilt on every evaluation.
+    """
+    store = await Store.connect(cluster, ssl="disable")
+    try:
+        flush = MartFlush(store)
+        common: dict[str, Any] = {
+            "snapshot_rows": [],
+            "phase_scores": [],
+            "catalyst_rows": [],
+            "calibration": None,
+            "series_ids": {},
+            "evaluated_at": NOW,
+        }
+        await flush.write(**common, **_judgment("2026-W39", setups=4))
+        await flush.write(**common, **_judgment("2026-W40", setups=3))
+
+        assert await _mart_counts(store) == {
+            "scenario_state": 3,
+            "scenario_target_state": 3,
+            "condition_state": 3,
+            "setup_state": 3,
+        }
+        rows = await store._fetch("select title from macro_mart.scenario_state")
+        assert {row["title"] for row in rows} == {"2026-W40 S1", "2026-W40 S2", "2026-W40 S3"}
+
+        # No active set and no active setup is a reading too: nothing to show.
+        await flush.write(
+            **common,
+            scenario_states=[],
+            target_states=[],
+            condition_states=[],
+            setup_states=[],
+        )
+        assert set((await _mart_counts(store)).values()) == {0}
     finally:
         await store.aclose()

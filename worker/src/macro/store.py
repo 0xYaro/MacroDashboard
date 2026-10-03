@@ -1343,9 +1343,24 @@ async def _flush_snapshot(
     )
 
 
+async def _keep_only(connection: Any, table: str, key: str, ids: Sequence[str]) -> None:
+    """Remove every row of `table` this evaluation did not produce.
+
+    These four tables are the active judgment and nothing else. An upsert alone
+    left a superseded week beside its successor: accepting W40 put nine
+    scenarios and seven setups on the Desk, three of them W40's.
+    """
+    await connection.execute(
+        f"delete from macro_mart.{table} where not ({key} = any($1::uuid[]))", list(ids)
+    )
+
+
 async def _flush_conditions(
     connection: Any, states: Sequence[ConditionState], evaluated_at: datetime
 ) -> None:
+    await _keep_only(
+        connection, "condition_state", "condition_id", [one.condition_id for one in states]
+    )
     if not states:
         return
     await connection.executemany(
@@ -1430,6 +1445,12 @@ async def _flush_scenarios(
     series_ids: dict[str, str],
     evaluated_at: datetime,
 ) -> None:
+    await _keep_only(
+        connection, "scenario_state", "scenario_id", [one.scenario_id for one in states]
+    )
+    await _keep_only(
+        connection, "scenario_target_state", "target_id", [one.target_id for one in targets]
+    )
     if states:
         await connection.executemany(
             """
@@ -1513,6 +1534,7 @@ async def _flush_scenarios(
 async def _flush_setups(
     connection: Any, states: Sequence[SetupState], evaluated_at: datetime
 ) -> None:
+    await _keep_only(connection, "setup_state", "setup_id", [one.setup_id for one in states])
     if not states:
         return
     await connection.executemany(
