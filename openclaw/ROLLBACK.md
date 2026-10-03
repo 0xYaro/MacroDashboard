@@ -29,7 +29,7 @@ done
 ## After the cutover: go back to the old jobs
 
 The cutover (see `README.md`) flips the plugin to `live`, points the worker at the desk and disables the three old jobs.
-The worker's 09:30 SGT run reads the feed sources from `.env`, and pointing it back at the vault is safe only once the vault notes are fresh again, so reverse it in this order:
+The worker's 09:30 SGT run reads the feed sources from `worker/.env` (not the repository-root `.env`), and pointing it back at the vault is safe only once the vault notes are fresh again, so reverse it in this order:
 
 1. Turn the old jobs back on first:
 
@@ -42,8 +42,8 @@ The worker's 09:30 SGT run reads the feed sources from `.env`, and pointing it b
 2. Stop the desk writing: `DESK_MODE=shadow openclaw/install.sh config`, restart the gateway with the checks in `README.md`, then disable the four desk jobs as in "Pause the trial".
 3. Wait for fresh notes: the catalyst note after the 08:45 run and the holdings note after the 09:15 run (and, on a Monday, the tail-risk note after 06:00; on other days the tail-risk note is the last weekly one).
    Check each job's last run with `openclaw cron runs --id <id>` before going on.
-4. Before 09:30 SGT the same morning, point the worker back at the notes: in the repository's `.env`, set (or delete, since `vault` is the default) `MACRO_FEED_SOURCE_CATALYSTS`, `MACRO_FEED_SOURCE_TAIL_RISKS` and `MACRO_FEED_SOURCE_HOLDINGS` to `vault`.
-   If 09:30 has passed, change `.env` any time before the next day's 09:30 run; the worker keeps serving the desk's rows until then.
+4. Before 09:30 SGT the same morning, point the worker back at the notes: in `worker/.env`, set (or delete, since `vault` is the default) `MACRO_FEED_SOURCE_CATALYSTS`, `MACRO_FEED_SOURCE_TAIL_RISKS` and `MACRO_FEED_SOURCE_HOLDINGS` to `vault`.
+   If 09:30 has passed, change `worker/.env` any time before the next day's 09:30 run; the worker keeps serving the desk's rows until then.
 
 The rows the desk wrote while live stay in the tables with `feed_source = 'openclaw:macro-desk'`.
 The next vault run updates the ones its notes list and retires the rest exactly as before the trial: **a catalyst only the desk found (one the old monitor's note does not list) is retired by the vault parser on that first 09:30 run**.

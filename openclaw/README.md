@@ -158,8 +158,9 @@ Do it after 3 to 5 good trial days, in a quiet window: after the 09:30 worker ru
    `DESK_MODE=live openclaw/install.sh config`, then restart the gateway with the checks above.
    Confirm with the next run: its submit replies carry `"dry_run": false` and a `run_id`, and `macro_mart.feed_freshness` shows `openclaw:macro-desk`.
 3. **Point the worker at the desk.**
-   The worker's launchd agent (`com.rayclaw.macro-worker`, from `worker/deploy/`) sets only `PATH`, `HOME`, `LOG_LEVEL` and `PYTHONUNBUFFERED`; everything else comes from this repository's `.env`, which `macro-worker` loads with `load_dotenv()` at start.
-   So add these three lines to `.env` (no reinstall of the agent needed; the next 09:30 run reads them):
+   The worker's launchd agent (`com.rayclaw.macro-worker`, from `worker/deploy/`) sets only `PATH`, `HOME`, `LOG_LEVEL` and `PYTHONUNBUFFERED`; everything else comes from `worker/.env`, not the repository-root `.env`.
+   `macro-worker` calls `load_dotenv()`, which walks up from `worker/src/macro/` and stops at the first `.env` it finds, so the root file is never read by the worker (the first cutover attempt on 30 September appended the lines there and the worker still resolved every feed to `vault`).
+   So add these three lines to `worker/.env` (no reinstall of the agent needed; the next 09:30 run reads them), and check with `cd worker && uv run python -c "from dotenv import load_dotenv; load_dotenv(); import macro.config as c; print(c.load().feed_sources)"`:
 
    ```
    MACRO_FEED_SOURCE_CATALYSTS=desk

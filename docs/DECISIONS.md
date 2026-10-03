@@ -817,3 +817,18 @@ The operator approved clearing `void_at` and `void_reason` on the six clauses vo
 They were 97261bb7 (S1 core PCE, voided 30 Sept 09:30 SGT), be74ffcb (S1 payrolls, 3 Oct), 76bf5230 (S1 Micron, 1 Oct), a79e2a52 (S2 hot data, 3 Oct), 12b9a5f0 (S2 Micron, 1 Oct) and c1ba5c04 (S3 cooler data, 3 Oct).
 This edits the judgment record, which the premise rule otherwise never does; it is recorded here so the week's grade can be read with it.
 The same day the operator rejected run 12, a W40 amendment written before the 29K payrolls print that raised the hot-data scenario.
+
+## 2026-10-04: The macro desk is live and the vault feeds are off
+
+The cutover approved on 28 September ran on 4 October at 04:20 SGT, after `macro-agent desk compare --since 2026-09-29` came back clean against step 1 of the checklist in `openclaw/README.md`.
+Every held name had a computed move or a stated reason (MAX and NEKO are too thin on Hyperliquid to report one), every material name had a source page or said no clear reason, the seven vault names were covered every day, and every date the desk and the vault disagreed on was the desk being right: the 14 October Beige Book the vault lost to a name collision, and exact earnings days where the vault carried "October".
+The one open difference is a judgment: the desk moved the AI-capex risk between watch and elevated after Micron's results, with a source each time.
+
+The plugin writes (`mode: live`), the worker reads all three feeds from the desk (`MACRO_FEED_SOURCE_*=desk`), `daily-market-catalyst-monitor`, `daily-holdings-watch` and `weekly-market-blackswan-events` are disabled, and the desk jobs report to Telegram topics 471 (catalysts), 500 (holdings) and 686 (both tail-risk jobs).
+
+The first attempt, on 30 September, was rolled back before anything but the plugin mode changed.
+The checklist said the worker reads the repository-root `.env`; it reads `worker/.env`, because `load_dotenv()` walks up from the package and stops at the first file it finds.
+With the lines only in the root file the desk would have written live while the 09:30 run kept parsing the vault notes and retiring the desk's rows, so the plugin went back to shadow and the operator added the lines to `worker/.env`.
+The three lines appended to the root `.env` on 30 September were inert and were removed after the cutover.
+The checklist now names `worker/.env` and says how to check it.
+Rollback is `openclaw/ROLLBACK.md`, "After the cutover".
